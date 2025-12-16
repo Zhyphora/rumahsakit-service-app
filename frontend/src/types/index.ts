@@ -1,0 +1,165 @@
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: "admin" | "doctor" | "staff" | "patient";
+  phone?: string;
+  isActive: boolean;
+  doctor?: Doctor;
+  staff?: Staff;
+}
+
+export interface Doctor {
+  id: string;
+  userId: string;
+  specialization: string;
+  licenseNumber?: string;
+  polyclinicId?: string;
+  polyclinic?: Polyclinic;
+  schedule?: Record<string, { start: string; end: string }>;
+}
+
+export interface Staff {
+  id: string;
+  userId: string;
+  department?: string;
+  position?: string;
+}
+
+export interface Patient {
+  id: string;
+  medicalRecordNumber: string;
+  name: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  phone?: string;
+  emergencyContact?: string;
+  bloodType?: string;
+  allergies?: string;
+}
+
+export interface Polyclinic {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface QueueNumber {
+  id: string;
+  polyclinicId: string;
+  polyclinic: Polyclinic;
+  patientId: string;
+  patient: Patient;
+  queueNumber: number;
+  queueDate: string;
+  status: "waiting" | "called" | "serving" | "completed" | "skipped";
+  checkInTime: string;
+  calledTime?: string;
+  servedTime?: string;
+  completedTime?: string;
+  doctorId?: string;
+  doctor?: Doctor;
+  notes?: string;
+}
+
+export interface QueueState {
+  polyclinic: Polyclinic;
+  currentlyServing?: QueueNumber;
+  lastCalled?: QueueNumber;
+  waiting: QueueNumber[];
+  completed: QueueNumber[];
+  skipped: QueueNumber[];
+  total: number;
+}
+
+export interface QueueDisplayItem {
+  polyclinic: Polyclinic;
+  currentNumber: number;
+  waitingCount: number;
+  status: "waiting" | "called" | "serving";
+}
+
+export interface Item {
+  id: string;
+  code: string;
+  name: string;
+  category?: string;
+  unit?: string;
+  minStock: number;
+  currentStock: number;
+  price?: number;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface StockOpname {
+  id: string;
+  opnameDate: string;
+  status: "draft" | "in_progress" | "completed";
+  notes?: string;
+  createdBy: string;
+  creator: User;
+  completedAt?: string;
+  items: StockOpnameItem[];
+}
+
+export interface StockOpnameItem {
+  id: string;
+  stockOpnameId: string;
+  itemId: string;
+  item: Item;
+  systemQty: number;
+  actualQty: number;
+  notes?: string;
+}
+
+export interface Document {
+  id: string;
+  title: string;
+  description?: string;
+  filePath: string;
+  fileType?: string;
+  fileSize?: number;
+  category?: string;
+  patientId?: string;
+  patient?: Patient;
+  uploadedBy: string;
+  uploader: User;
+  isConfidential: boolean;
+  createdAt: string;
+}
+
+export interface Attendance {
+  id: string;
+  userId: string;
+  user?: User;
+  attendanceDate: string;
+  checkIn?: string;
+  checkOut?: string;
+  checkInLocation?: { lat: number; lng: number };
+  checkOutLocation?: { lat: number; lng: number };
+  status: "present" | "late" | "absent" | "leave" | "sick";
+  notes?: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  userId: string;
+  user: User;
+  leaveType: "annual" | "sick" | "emergency";
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  status: "pending" | "approved" | "rejected";
+  approvedBy?: string;
+  approver?: User;
+  approvedAt?: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}

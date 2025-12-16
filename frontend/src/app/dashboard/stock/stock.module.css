@@ -1,0 +1,211 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  background: #f3f4f6;
+}
+
+.tab.active {
+  background: #0066cc;
+  color: white;
+}
+
+.content {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  min-width: 250px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: #374151;
+}
+
+.checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0066cc;
+}
+
+.createBtn {
+  background: linear-gradient(135deg, #0066cc, #004c99);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.createBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.table tr:hover {
+  background: #f9fafb;
+}
+
+.stockCell {
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+}
+
+.badgeSuccess {
+  background: rgba(0, 184, 148, 0.1);
+  color: #00b894;
+}
+
+.badgeWarning {
+  background: rgba(253, 203, 110, 0.2);
+  color: #b37f00;
+}
+
+.badgeDanger {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.badgeInfo {
+  background: rgba(116, 185, 255, 0.1);
+  color: #0056b3;
+}
+
+.opnameList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.opnameCard {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.opnameCard:hover {
+  border-color: #0066cc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.opnameHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.opnameDate {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.opnameInfo {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.opnameInfo p {
+  margin: 0.25rem 0;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  color: #9ca3af;
+}
