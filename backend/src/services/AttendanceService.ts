@@ -2,13 +2,43 @@ import { AppDataSource } from "../config/database";
 import { Attendance, AttendanceStatus } from "../entities/Attendance";
 import { LeaveRequest, LeaveStatus } from "../entities/LeaveRequest";
 import { Between, LessThanOrEqual, MoreThanOrEqual } from "typeorm";
+import * as fs from "fs";
+import * as path from "path";
+import { v4 as uuidv4 } from "uuid";
 
 export class AttendanceService {
   private attendanceRepository = AppDataSource.getRepository(Attendance);
   private leaveRequestRepository = AppDataSource.getRepository(LeaveRequest);
 
+  // Save base64 photo to disk
+  private savePhoto(base64Data: string): string {
+    const matches = base64Data.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) {
+      throw new Error("Invalid image data");
+    }
+
+    const ext = matches[1];
+    const data = matches[2];
+    const filename = `${uuidv4()}.${ext}`;
+    const uploadDir = path.join(__dirname, "../../uploads/attendance");
+
+    // Create directory if not exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const filepath = path.join(uploadDir, filename);
+    fs.writeFileSync(filepath, Buffer.from(data, "base64"));
+
+    return `/uploads/attendance/${filename}`;
+  }
+
   // Check in
-  async checkIn(userId: string, location?: { lat: number; lng: number }) {
+  async checkIn(
+    userId: string,
+    location?: { lat: number; lng: number },
+    photo?: string
+  ) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -27,9 +57,16 @@ export class AttendanceService {
     // Determine status based on check-in time (late if after 9 AM)
     const status: AttendanceStatus = checkInHour >= 9 ? "late" : "present";
 
+    // Save photo if provided
+    let photoPath: string | undefined;
+    if (photo) {
+      photoPath = this.savePhoto(photo);
+    }
+
     if (existing) {
       existing.checkIn = now;
       existing.checkInLocation = location;
+      existing.checkInPhoto = photoPath;
       existing.status = status;
       return this.attendanceRepository.save(existing);
     }
@@ -39,6 +76,7 @@ export class AttendanceService {
       attendanceDate: today,
       checkIn: now,
       checkInLocation: location,
+      checkInPhoto: photoPath,
       status,
     });
 
@@ -46,7 +84,11 @@ export class AttendanceService {
   }
 
   // Check out
-  async checkOut(userId: string, location?: { lat: number; lng: number }) {
+  async checkOut(
+    userId: string,
+    location?: { lat: number; lng: number },
+    photo?: string
+  ) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -62,8 +104,15 @@ export class AttendanceService {
       throw new Error("Already checked out today");
     }
 
+    // Save photo if provided
+    let photoPath: string | undefined;
+    if (photo) {
+      photoPath = this.savePhoto(photo);
+    }
+
     attendance.checkOut = new Date();
     attendance.checkOutLocation = location;
+    attendance.checkOutPhoto = photoPath;
 
     return this.attendanceRepository.save(attendance);
   }

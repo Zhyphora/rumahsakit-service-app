@@ -20,16 +20,22 @@ export default function HomePage() {
           <p>Tampilan antrian untuk layar TV di lobby</p>
         </Link>
 
-        <Link href="/login" className={styles.card}>
-          <div className={styles.cardIcon}>Login</div>
-          <h2>Login Staff</h2>
-          <p>Masuk untuk akses dashboard</p>
+        <Link href="/doctors" className={styles.card}>
+          <div className={styles.cardIcon}>Doc</div>
+          <h2>Dokter Bertugas</h2>
+          <p>Lihat dokter yang bertugas hari ini</p>
         </Link>
 
         <Link href="/take-queue" className={styles.card}>
           <div className={styles.cardIcon}>Antri</div>
           <h2>Ambil Antrian</h2>
           <p>Ambil nomor antrian baru</p>
+        </Link>
+
+        <Link href="/login" className={styles.card}>
+          <div className={styles.cardIcon}>Login</div>
+          <h2>Login Staff</h2>
+          <p>Masuk untuk akses dashboard</p>
         </Link>
       </div>
 

@@ -40,6 +40,12 @@ export class Attendance {
   @Column({ name: "check_out_location", type: "jsonb", nullable: true })
   checkOutLocation?: { lat: number; lng: number };
 
+  @Column({ name: "check_in_photo", type: "varchar", nullable: true })
+  checkInPhoto?: string;
+
+  @Column({ name: "check_out_photo", type: "varchar", nullable: true })
+  checkOutPhoto?: string;
+
   @Column({ type: "varchar", length: 20, default: "present" })
   status!: AttendanceStatus;
 

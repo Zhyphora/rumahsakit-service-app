@@ -141,6 +141,8 @@ export interface Attendance {
   checkOut?: string;
   checkInLocation?: { lat: number; lng: number };
   checkOutLocation?: { lat: number; lng: number };
+  checkInPhoto?: string;
+  checkOutPhoto?: string;
   status: "present" | "late" | "absent" | "leave" | "sick";
   notes?: string;
 }

@@ -61,6 +61,15 @@
   color: #1f2937;
 }
 
+.photoThumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  margin-top: 0.5rem;
+  border: 2px solid #e5e7eb;
+}
+
 .actions {
   display: flex;
   justify-content: center;

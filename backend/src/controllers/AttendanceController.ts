@@ -13,10 +13,11 @@ export class AttendanceController {
         return;
       }
 
-      const { location } = req.body;
+      const { location, photo } = req.body;
       const attendance = await this.attendanceService.checkIn(
         req.user.id,
-        location
+        location,
+        photo
       );
       res.json(attendance);
     } catch (error: any) {
@@ -32,10 +33,11 @@ export class AttendanceController {
         return;
       }
 
-      const { location } = req.body;
+      const { location, photo } = req.body;
       const attendance = await this.attendanceService.checkOut(
         req.user.id,
-        location
+        location,
+        photo
       );
       res.json(attendance);
     } catch (error: any) {

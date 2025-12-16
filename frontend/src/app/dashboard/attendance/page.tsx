@@ -256,12 +256,30 @@ export default function AttendancePage() {
             <span className={styles.timeValue}>
               {formatTime(todayStatus?.checkIn)}
             </span>
+            {todayStatus?.checkInPhoto && (
+              <img
+                src={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}${
+                  todayStatus.checkInPhoto
+                }`}
+                alt="Check In Photo"
+                className={styles.photoThumb}
+              />
+            )}
           </div>
           <div className={styles.timeBlock}>
             <span className={styles.timeLabel}>Check Out</span>
             <span className={styles.timeValue}>
               {formatTime(todayStatus?.checkOut)}
             </span>
+            {todayStatus?.checkOutPhoto && (
+              <img
+                src={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}${
+                  todayStatus.checkOutPhoto
+                }`}
+                alt="Check Out Photo"
+                className={styles.photoThumb}
+              />
+            )}
           </div>
           <div className={styles.timeBlock}>
             <span className={styles.timeLabel}>Status</span>
