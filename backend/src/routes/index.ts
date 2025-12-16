@@ -6,6 +6,7 @@ import documentRoutes from "./document.routes";
 import attendanceRoutes from "./attendance.routes";
 import patientRoutes from "./patient.routes";
 import doctorRoutes from "./doctor.routes";
+import prescriptionRoutes from "./prescription.routes";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/documents", documentRoutes);
 router.use("/attendance", attendanceRoutes);
 router.use("/patients", patientRoutes);
 router.use("/doctors", doctorRoutes);
+router.use("/prescriptions", prescriptionRoutes);
 
 export default router;

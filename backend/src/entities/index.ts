@@ -14,3 +14,5 @@ export * from "./DocumentAccess";
 export * from "./DocumentAccessLog";
 export * from "./Attendance";
 export * from "./LeaveRequest";
+export * from "./Prescription";
+export * from "./PrescriptionItem";

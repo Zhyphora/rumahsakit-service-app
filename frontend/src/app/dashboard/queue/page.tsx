@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import api from "@/services/api";
 import { useQueueSocket } from "@/hooks/useQueueSocket";
-import { Polyclinic, QueueState } from "@/types";
+import { Polyclinic, QueueState, QueueNumber, Item } from "@/types";
 import styles from "./queue.module.css";
 
 interface PolyclinicQueue {
@@ -11,15 +11,34 @@ interface PolyclinicQueue {
   data: QueueState | null;
 }
 
+interface PrescriptionItem {
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  dosage: string;
+  instructions: string;
+}
+
 export default function QueuePage() {
   const [allQueues, setAllQueues] = useState<PolyclinicQueue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Prescription modal state
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [currentQueue, setCurrentQueue] = useState<QueueNumber | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [diagnosis, setDiagnosis] = useState("");
+  const [notes, setNotes] = useState("");
+  const [prescriptionItems, setPrescriptionItems] = useState<
+    PrescriptionItem[]
+  >([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const { connected } = useQueueSocket("");
 
   useEffect(() => {
     loadAllQueues();
-    // Refresh every 5 seconds
+    loadItems();
     const interval = setInterval(loadAllQueues, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -48,12 +67,20 @@ export default function QueuePage() {
     }
   };
 
+  const loadItems = async () => {
+    try {
+      const res = await api.get("/stock/items");
+      setItems(res.data);
+    } catch (error) {
+      console.error("Failed to load items:", error);
+    }
+  };
+
   const handleCall = async (queueId: string) => {
     try {
       await api.post(`/queue/call/${queueId}`);
       loadAllQueues();
     } catch (error: any) {
-      console.error("Call error:", error);
       alert(error.response?.data?.message || "Gagal memanggil antrian");
     }
   };
@@ -63,18 +90,7 @@ export default function QueuePage() {
       await api.post(`/queue/serve/${queueId}`);
       loadAllQueues();
     } catch (error: any) {
-      console.error("Serve error:", error);
       alert(error.response?.data?.message || "Gagal memulai layanan");
-    }
-  };
-
-  const handleComplete = async (queueId: string) => {
-    try {
-      await api.post(`/queue/complete/${queueId}`);
-      loadAllQueues();
-    } catch (error: any) {
-      console.error("Complete error:", error);
-      alert(error.response?.data?.message || "Gagal menyelesaikan layanan");
     }
   };
 
@@ -83,8 +99,101 @@ export default function QueuePage() {
       await api.post(`/queue/skip/${queueId}`);
       loadAllQueues();
     } catch (error: any) {
-      console.error("Skip error:", error);
       alert(error.response?.data?.message || "Gagal melewati antrian");
+    }
+  };
+
+  // Open prescription modal
+  const openPrescriptionModal = (queue: QueueNumber) => {
+    setCurrentQueue(queue);
+    setDiagnosis("");
+    setNotes("");
+    setPrescriptionItems([]);
+    setShowPrescriptionModal(true);
+  };
+
+  // Add prescription item
+  const addPrescriptionItem = () => {
+    setPrescriptionItems([
+      ...prescriptionItems,
+      {
+        itemId: "",
+        itemName: "",
+        quantity: 1,
+        dosage: "",
+        instructions: "",
+      },
+    ]);
+  };
+
+  // Update prescription item
+  const updatePrescriptionItem = (index: number, field: string, value: any) => {
+    const updated = [...prescriptionItems];
+    if (field === "itemId") {
+      const item = items.find((i) => i.id === value);
+      updated[index].itemId = value;
+      updated[index].itemName = item?.name || "";
+    } else {
+      (updated[index] as any)[field] = value;
+    }
+    setPrescriptionItems(updated);
+  };
+
+  // Remove prescription item
+  const removePrescriptionItem = (index: number) => {
+    setPrescriptionItems(prescriptionItems.filter((_, i) => i !== index));
+  };
+
+  // Submit prescription and complete
+  const handleCompleteWithPrescription = async () => {
+    if (!currentQueue) return;
+
+    setSubmitting(true);
+    try {
+      // Create prescription if there are items
+      if (prescriptionItems.length > 0) {
+        await api.post("/prescriptions", {
+          queueNumberId: currentQueue.id,
+          patientId: currentQueue.patientId,
+          doctorId: currentQueue.doctorId,
+          diagnosis,
+          notes,
+          items: prescriptionItems
+            .filter((item) => item.itemId)
+            .map((item) => ({
+              itemId: item.itemId,
+              quantity: item.quantity,
+              dosage: item.dosage,
+              instructions: item.instructions,
+            })),
+        });
+      }
+
+      // Complete the queue
+      await api.post(`/queue/complete/${currentQueue.id}`);
+
+      setShowPrescriptionModal(false);
+      setCurrentQueue(null);
+      loadAllQueues();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Gagal menyelesaikan layanan");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Quick complete without prescription
+  const handleQuickComplete = async () => {
+    if (!currentQueue) return;
+    setSubmitting(true);
+    try {
+      await api.post(`/queue/complete/${currentQueue.id}`);
+      setShowPrescriptionModal(false);
+      loadAllQueues();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Gagal menyelesaikan layanan");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -98,6 +207,151 @@ export default function QueuePage() {
 
   return (
     <div className={styles.container}>
+      {/* Prescription Modal */}
+      {showPrescriptionModal && currentQueue && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h2>Selesaikan Layanan</h2>
+              <button
+                onClick={() => setShowPrescriptionModal(false)}
+                className={styles.closeBtn}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.patientInfo}>
+                <p>
+                  <strong>Pasien:</strong> {currentQueue.patient?.name}
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Diagnosis</label>
+                <textarea
+                  value={diagnosis}
+                  onChange={(e) => setDiagnosis(e.target.value)}
+                  placeholder="Masukkan diagnosis..."
+                  rows={2}
+                />
+              </div>
+
+              <div className={styles.prescriptionSection}>
+                <div className={styles.sectionHeader}>
+                  <h3>Resep Obat</h3>
+                  <button
+                    type="button"
+                    onClick={addPrescriptionItem}
+                    className={styles.addBtn}
+                  >
+                    + Tambah Obat
+                  </button>
+                </div>
+
+                {prescriptionItems.map((item, index) => (
+                  <div key={index} className={styles.prescriptionRow}>
+                    <select
+                      value={item.itemId}
+                      onChange={(e) =>
+                        updatePrescriptionItem(index, "itemId", e.target.value)
+                      }
+                      className={styles.selectItem}
+                    >
+                      <option value="">Pilih Obat</option>
+                      {items
+                        .filter((i) => i.category === "obat")
+                        .map((i) => (
+                          <option key={i.id} value={i.id}>
+                            {i.name} (Stok: {i.currentStock})
+                          </option>
+                        ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        updatePrescriptionItem(
+                          index,
+                          "quantity",
+                          parseInt(e.target.value) || 1
+                        )
+                      }
+                      min={1}
+                      className={styles.inputQty}
+                      placeholder="Jml"
+                    />
+                    <input
+                      type="text"
+                      value={item.dosage}
+                      onChange={(e) =>
+                        updatePrescriptionItem(index, "dosage", e.target.value)
+                      }
+                      className={styles.inputDosage}
+                      placeholder="Dosis (cth: 3x1)"
+                    />
+                    <input
+                      type="text"
+                      value={item.instructions}
+                      onChange={(e) =>
+                        updatePrescriptionItem(
+                          index,
+                          "instructions",
+                          e.target.value
+                        )
+                      }
+                      className={styles.inputInstructions}
+                      placeholder="Aturan (cth: Setelah makan)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePrescriptionItem(index)}
+                      className={styles.removeBtn}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {prescriptionItems.length === 0 && (
+                  <p className={styles.noItems}>
+                    Klik "+ Tambah Obat" untuk menambahkan resep
+                  </p>
+                )}
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Catatan Tambahan</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Catatan untuk apoteker atau pasien..."
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                onClick={handleQuickComplete}
+                disabled={submitting}
+                className={`${styles.btn} ${styles.btnSecondary}`}
+              >
+                Selesai Tanpa Resep
+              </button>
+              <button
+                onClick={handleCompleteWithPrescription}
+                disabled={submitting}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+              >
+                {submitting ? "Memproses..." : "Selesai & Kirim Resep"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.header}>
         <h1 className={styles.title}>Manajemen Antrian</h1>
         <div className={styles.connectionStatus}>
@@ -118,7 +372,6 @@ export default function QueuePage() {
               <span className={styles.polyCode}>{polyclinic.code}</span>
             </div>
 
-            {/* Currently Serving or Called */}
             {data?.currentlyServing ? (
               <div className={`${styles.currentCard} ${styles.serving}`}>
                 <span className={styles.queueNumber}>
@@ -129,7 +382,7 @@ export default function QueuePage() {
                   {data.currentlyServing.patient?.name}
                 </span>
                 <button
-                  onClick={() => handleComplete(data.currentlyServing!.id)}
+                  onClick={() => openPrescriptionModal(data.currentlyServing!)}
                   className={`${styles.btn} ${styles.btnSuccess}`}
                 >
                   Selesai
@@ -163,7 +416,6 @@ export default function QueuePage() {
               <div className={styles.noServing}>Tidak ada yang dilayani</div>
             )}
 
-            {/* Waiting Queue */}
             <div className={styles.waitingSection}>
               <h3>Menunggu ({data?.waiting?.length || 0})</h3>
               {data?.waiting && data.waiting.length > 0 ? (
@@ -202,7 +454,6 @@ export default function QueuePage() {
               )}
             </div>
 
-            {/* Stats */}
             <div className={styles.polyStats}>
               <div className={styles.polyStat}>
                 <span className={styles.polyStatValue}>{data?.total || 0}</span>

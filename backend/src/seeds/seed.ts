@@ -24,7 +24,7 @@ async function seed() {
 
     // Create Admin
     const admin = userRepository.create({
-      email: "admin@rumahsakit.com",
+      email: " ",
       password: hashedPassword,
       name: "Admin Rumah Sakit",
       role: "admin",

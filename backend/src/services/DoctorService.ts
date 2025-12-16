@@ -18,13 +18,13 @@ export class DoctorService {
   async getAvailableDoctors() {
     const today = new Date();
     const dayNames = [
-      "minggu",
-      "senin",
-      "selasa",
-      "rabu",
-      "kamis",
-      "jumat",
-      "sabtu",
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
     ];
     const todayName = dayNames[today.getDay()];
 

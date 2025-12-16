@@ -7,15 +7,30 @@ const stockController = new StockController();
 
 // All routes require authentication
 router.use(authMiddleware);
-router.use(roleMiddleware("admin", "staff"));
 
-// Items
+// Items - accessible by admin, staff, and doctor (for prescriptions)
 router.get("/items", stockController.getItems);
-router.get("/items/low-stock", stockController.getLowStockItems);
+router.get(
+  "/items/low-stock",
+  roleMiddleware("admin", "staff"),
+  stockController.getLowStockItems
+);
 router.get("/items/:id", stockController.getItemById);
-router.post("/items", stockController.createItem);
-router.put("/items/:id", stockController.updateItem);
-router.delete("/items/:id", stockController.deleteItem);
+router.post(
+  "/items",
+  roleMiddleware("admin", "staff"),
+  stockController.createItem
+);
+router.put(
+  "/items/:id",
+  roleMiddleware("admin", "staff"),
+  stockController.updateItem
+);
+router.delete(
+  "/items/:id",
+  roleMiddleware("admin", "staff"),
+  stockController.deleteItem
+);
 
 // Stock Opname
 router.get("/opname", stockController.getStockOpnames);

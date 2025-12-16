@@ -36,6 +36,7 @@ export default function DashboardLayout({
     { href: "/dashboard", label: "Dashboard", icon: "" },
     { href: "/dashboard/queue", label: "Antrian", icon: "" },
     { href: "/dashboard/patients", label: "Pasien", icon: "" },
+    { href: "/dashboard/pharmacy", label: "Farmasi", icon: "" },
     { href: "/dashboard/stock", label: "Stock Opname", icon: "" },
     { href: "/dashboard/documents", label: "Dokumen", icon: "" },
     { href: "/dashboard/attendance", label: "Absensi", icon: "" },
