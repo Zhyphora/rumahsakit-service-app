@@ -22,7 +22,7 @@ export class StockCorrection {
   item!: Item;
 
   // Quantity adjusted (positive for increase, negative for decrease)
-  @Column({ type: "int" })
+  @Column({ name: "adjusted_qty", type: "int" })
   adjustedQty!: number;
 
   @Column({ type: "text", nullable: true })

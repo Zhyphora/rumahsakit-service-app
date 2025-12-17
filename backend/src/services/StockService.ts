@@ -181,12 +181,14 @@ export class StockService {
 
     // Adjust stock for each item
     for (const opnameItem of opname.items) {
-      const difference = opnameItem.actualQty - opnameItem.systemQty;
+      const actual = opnameItem.actualQty ?? opnameItem.systemQty;
+      const difference = actual - opnameItem.systemQty;
 
       if (difference !== 0) {
         // Update item stock
         const item = opnameItem.item;
-        item.currentStock = opnameItem.actualQty;
+        // Use actualQty if provided, otherwise keep systemQty
+        item.currentStock = opnameItem.actualQty ?? opnameItem.systemQty;
         await this.itemRepository.save(item);
 
         // Create stock movement

@@ -9,31 +9,51 @@ export class AccessControlService {
 
   /** List all access control entries */
   async listAll(): Promise<AccessControl[]> {
-    return this.accessRepo.find();
+    return this.accessRepo.find({
+      relations: ["user"],
+      order: { role: "ASC", feature: "ASC" },
+    });
   }
 
-  /** Set permission for a role and feature. If exists, update; otherwise create */
+  /** Set permission for a role OR user and feature. */
   async setPermission(
-    role: UserRole,
+    role: UserRole | null,
+    userId: string | null,
     feature: string,
     allowed: boolean
   ): Promise<AccessControl> {
-    // allowed flag determines presence; if false, we delete any existing entry
+    if (!role && !userId) {
+      throw new Error("Either role or userId must be provided");
+    }
+
+    const where: any = { feature };
+    if (role) where.role = role;
+    if (userId) where.userId = userId;
+
     const existing = await this.accessRepo.findOne({
-      where: { role, feature },
+      where,
     });
+
     if (!allowed) {
       if (existing) {
         await this.accessRepo.remove(existing);
       }
-      // Return a dummy object indicating removal
-      return this.accessRepo.create({ role, feature });
+      return this.accessRepo.create({
+        role: role || undefined,
+        userId: userId || undefined,
+        feature,
+      });
     }
+
     if (existing) {
-      // already allowed, return it
       return existing;
     }
-    const newEntry = this.accessRepo.create({ role, feature });
+
+    const newEntry = this.accessRepo.create({
+      role: role || undefined,
+      userId: userId || undefined,
+      feature,
+    });
     return this.accessRepo.save(newEntry);
   }
 
@@ -42,9 +62,28 @@ export class AccessControlService {
     await this.accessRepo.delete(id);
   }
 
-  /** Check if a role has access to a feature */
-  async hasAccess(role: UserRole, feature: string): Promise<boolean> {
-    const count = await this.accessRepo.count({ where: { role, feature } });
-    return count > 0;
+  /** Check if a role or user has access to a feature */
+  async hasAccess(
+    role: UserRole,
+    feature: string,
+    userId?: string
+  ): Promise<boolean> {
+    if (role === "admin") return true;
+
+    // Check role-based access
+    const roleAccess = await this.accessRepo.findOne({
+      where: { role, feature },
+    });
+    if (roleAccess) return true;
+
+    // Check user-specific access
+    if (userId) {
+      const userAccess = await this.accessRepo.findOne({
+        where: { userId, feature },
+      });
+      if (userAccess) return true;
+    }
+
+    return false;
   }
 }

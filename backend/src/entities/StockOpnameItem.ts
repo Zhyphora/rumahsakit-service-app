@@ -32,8 +32,8 @@ export class StockOpnameItem {
   @Column({ name: "system_qty" })
   systemQty!: number;
 
-  @Column({ name: "actual_qty" })
-  actualQty!: number;
+  @Column({ name: "actual_qty", type: "int", nullable: true })
+  actualQty!: number | null;
 
   @Column({ type: "text", nullable: true })
   notes?: string;
@@ -46,6 +46,7 @@ export class StockOpnameItem {
 
   // Computed field
   get difference(): number {
-    return this.actualQty - this.systemQty;
+    const actual = this.actualQty ?? this.systemQty;
+    return actual - this.systemQty;
   }
 }

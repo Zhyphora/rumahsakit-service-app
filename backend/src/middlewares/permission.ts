@@ -10,7 +10,11 @@ export const permissionMiddleware = (feature: string) => {
       if (!req.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const has = await accessControlService.hasAccess(req.user.role, feature);
+      const has = await accessControlService.hasAccess(
+        req.user.role,
+        feature,
+        req.user.id
+      );
       if (!has) {
         return res.status(403).json({ message: "Access denied" });
       }

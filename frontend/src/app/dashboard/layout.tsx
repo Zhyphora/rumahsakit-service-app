@@ -13,6 +13,7 @@ import {
   FiClock,
   FiList,
   FiActivity,
+  FiLock,
 } from "react-icons/fi";
 import { MdLocalPharmacy } from "react-icons/md";
 
@@ -62,6 +63,11 @@ export default function DashboardLayout({
           { href: "/dashboard/stock", label: "Stock Opname", icon: FiPackage },
           { href: "/dashboard/documents", label: "Dokumen", icon: FiFileText },
           { href: "/dashboard/attendance", label: "Absensi", icon: FiClock },
+          {
+            href: "/dashboard/access-controls",
+            label: "Access Control",
+            icon: FiLock,
+          },
         ];
 
       case "doctor":

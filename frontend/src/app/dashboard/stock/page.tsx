@@ -5,7 +5,11 @@ import api from "@/services/api";
 import { Item, StockOpname } from "@/types";
 import styles from "./stock.module.css";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 import { FiPackage, FiClipboard } from "react-icons/fi";
+
+const MySwal = withReactContent(Swal);
 
 export default function StockPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -43,14 +47,33 @@ export default function StockPage() {
   });
 
   const handleCreateOpname = async () => {
-    try {
-      await api.post("/stock/opname", { notes: "Stock opname harian" });
-      toast.success("Stock opname berhasil dibuat");
-      loadData();
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || "Gagal membuat stock opname"
-      );
+    const result = await MySwal.fire({
+      title: "Buat Stock Opname Baru",
+      input: "text",
+      inputLabel: "Nama / Catatan Opname",
+      inputPlaceholder: "Contoh: Opname Harian Obat",
+      showCancelButton: true,
+      confirmButtonText: "Buat",
+      cancelButtonText: "Batal",
+      inputValidator: (value) => {
+        if (!value) {
+          return "Anda harus menuliskan nama/catatan!";
+        }
+      },
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.post("/stock/opname", { notes: result.value });
+        MySwal.fire("Berhasil!", "Stock opname berhasil dibuat.", "success");
+        loadData();
+      } catch (error: any) {
+        MySwal.fire(
+          "Gagal!",
+          error.response?.data?.message || "Gagal membuat stock opname",
+          "error"
+        );
+      }
     }
   };
 
@@ -170,7 +193,14 @@ export default function StockPage() {
 
           <div className={styles.opnameList}>
             {opnames.map((opname) => (
-              <div key={opname.id} className={styles.opnameCard}>
+              <div
+                key={opname.id}
+                className={styles.opnameCard}
+                onClick={() =>
+                  (window.location.href = `/dashboard/stock/${opname.id}`)
+                }
+                style={{ cursor: "pointer" }}
+              >
                 <div className={styles.opnameHeader}>
                   <span className={styles.opnameDate}>
                     {new Date(opname.opnameDate).toLocaleDateString("id-ID")}

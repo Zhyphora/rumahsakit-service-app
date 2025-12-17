@@ -1,10 +1,15 @@
 import { AppDataSource } from "../config/database";
-import { User } from "../entities/User";
+import { AccessControl } from "../entities/AccessControl";
+import { User, UserRole } from "../entities/User";
 import { Doctor } from "../entities/Doctor";
 import { Staff } from "../entities/Staff";
 import { Patient } from "../entities/Patient";
 import { Polyclinic } from "../entities/Polyclinic";
 import { Item } from "../entities/Item";
+import { StockBatch } from "../entities/StockBatch";
+import { StockOpname } from "../entities/StockOpname";
+import { StockOpnameItem } from "../entities/StockOpnameItem";
+import { StockOpnameStatus } from "../entities/StockOpname";
 import bcrypt from "bcryptjs";
 
 async function seed() {
@@ -398,6 +403,57 @@ async function seed() {
       await itemRepository.save(item);
     }
     console.log("Items created");
+
+    // ----- Create Stock Batches for FIFO -----
+    const batchRepo = AppDataSource.getRepository(StockBatch);
+    const allItemsForBatch = await itemRepository.find();
+    for (const it of allItemsForBatch) {
+      await batchRepo.save({
+        itemId: it.id,
+        quantity: it.currentStock,
+        receivedAt: new Date(),
+      });
+    }
+    console.log("Stock batches created");
+
+    // ----- Create a Draft Stock Opname for demo -----
+    const opnameRepo = AppDataSource.getRepository(StockOpname);
+    const opnameItemRepo = AppDataSource.getRepository(StockOpnameItem);
+    const demoOpname = await opnameRepo.save({
+      opnameDate: new Date(),
+      status: "draft" as StockOpnameStatus,
+      notes: "Demo opname created by seed",
+      createdBy: admin.id,
+    });
+    // Add each item to the opname with systemQty = currentStock
+    const allItems = await itemRepository.find();
+    for (const it of allItems) {
+      await opnameItemRepo.save({
+        stockOpnameId: demoOpname.id,
+        itemId: it.id,
+        systemQty: it.currentStock,
+        actualQty: null,
+      });
+    }
+    console.log("Demo stock opname created");
+
+    // ----- Access Control entries -----
+    const acRepo = AppDataSource.getRepository(AccessControl);
+    const features = [
+      "stock:adjust",
+      "stock:opname",
+      "admin:access-control",
+      "stock:correction",
+      "stock:adjust_in",
+      "stock:adjust_out",
+    ];
+    // admin gets all features
+    for (const f of features) {
+      await acRepo.save({ role: "admin" as UserRole, feature: f });
+    }
+    // staff can only adjust stock (example)
+    await acRepo.save({ role: "staff" as UserRole, feature: "stock:adjust" });
+    console.log("Access control entries created");
 
     console.log("Seed completed successfully!");
     console.log("\nDefault credentials:");

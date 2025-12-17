@@ -16,22 +16,53 @@ export class AccessControlController {
   };
 
   // POST /admin/access-controls
-  // body: { role: string, feature: string, allowed: boolean }
+  // body: { role?: string, userId?: string, feature?: string, features?: string[], allowed?: boolean }
   setPermission = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const { role, feature, allowed } = req.body;
-      if (!role || !feature || typeof allowed !== "boolean") {
-        res.status(400).json({ message: "Invalid payload" });
+      const { role, userId, feature, features, allowed } = req.body;
+      const isAllowed = allowed !== undefined ? allowed : true;
+
+      if ((!role && !userId) || (!feature && !features)) {
+        res.status(400).json({
+          message:
+            "Invalid payload: Either (role OR userId) AND (feature OR features) required",
+        });
         return;
       }
-      const result = await this.accessService.setPermission(
-        role,
-        feature,
-        allowed
-      );
-      res.json(result);
+
+      const featureList = features || [feature];
+      const results = [];
+
+      for (const f of featureList) {
+        // Cast role/userId to handle potential undefined
+        const result = await this.accessService.setPermission(
+          role || null,
+          userId || null,
+          f,
+          isAllowed
+        );
+        results.push(result);
+      }
+
+      res.json(results.length === 1 ? results[0] : results);
     } catch (err: any) {
       res.status(400).json({ message: err.message });
+    }
+  };
+
+  // GET /admin/users-list
+  getUsersList = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { AppDataSource } = require("../config/database");
+      const { User } = require("../entities/User");
+      const userRepo = AppDataSource.getRepository(User);
+      const users = await userRepo.find({
+        select: ["id", "name", "role", "email"],
+        order: { name: "ASC" },
+      });
+      res.json(users);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
     }
   };
 

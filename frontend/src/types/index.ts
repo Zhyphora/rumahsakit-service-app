@@ -113,7 +113,7 @@ export interface StockOpnameItem {
   itemId: string;
   item: Item;
   systemQty: number;
-  actualQty: number;
+  actualQty: number | null;
   notes?: string;
 }
 
