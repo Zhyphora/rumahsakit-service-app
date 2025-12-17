@@ -61,6 +61,20 @@
   gap: 0.5rem;
 }
 
+.queueCard.unavailable {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  opacity: 0.6;
+}
+
+.queueCard.unavailable .queueNumber {
+  color: #f87171;
+}
+
+.queueCard.unavailable .scheduleInfo {
+  color: #f87171;
+}
+
 .queueCard.serving {
   border-color: #10b981;
   background: rgba(16, 185, 129, 0.1);

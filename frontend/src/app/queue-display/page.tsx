@@ -88,10 +88,11 @@ export default function QueueDisplayPage() {
     return date.toLocaleTimeString("id-ID");
   };
 
-  // Filter only available doctors
-  const availableDoctors = displayData.filter((item) =>
-    isDoctorAvailable(item.schedule)
-  );
+  // Add availability status to each doctor
+  const doctorsWithAvailability = displayData.map((item) => ({
+    ...item,
+    isAvailable: isDoctorAvailable(item.schedule),
+  }));
 
   return (
     <div className={styles.container}>
@@ -106,12 +107,14 @@ export default function QueueDisplayPage() {
       </header>
 
       <div className={styles.grid}>
-        {availableDoctors.map((item) => (
+        {doctorsWithAvailability.map((item) => (
           <div
             key={item.doctor.id}
             className={`${styles.queueCard} ${
-              item.status === "serving" ? styles.serving : ""
-            } ${item.status === "called" ? styles.called : ""}`}
+              !item.isAvailable ? styles.unavailable : ""
+            } ${item.status === "serving" ? styles.serving : ""} ${
+              item.status === "called" ? styles.called : ""
+            }`}
           >
             <div className={styles.doctorHeader}>
               <div className={styles.doctorAvatar}>
@@ -154,9 +157,9 @@ export default function QueueDisplayPage() {
         ))}
       </div>
 
-      {availableDoctors.length === 0 && (
+      {doctorsWithAvailability.length === 0 && (
         <div className={styles.emptyState}>
-          <p>Tidak ada dokter yang bertugas saat ini</p>
+          <p>Tidak ada dokter yang bertugas hari ini</p>
           <p className={styles.hint}>Silakan kembali pada jam operasional</p>
         </div>
       )}

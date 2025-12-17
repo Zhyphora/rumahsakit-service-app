@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import api from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 import styles from "./pharmacy.module.css";
+import Swal from "sweetalert2";
+import { FiAlertCircle } from "react-icons/fi";
 
 interface PrescriptionItem {
   id: string;
@@ -23,12 +26,25 @@ interface Prescription {
   createdAt: string;
 }
 
+interface StaffInfo {
+  department: string;
+  position: string;
+}
+
 export default function PharmacyPage() {
+  const { user } = useAuth();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
   const [dispensing, setDispensing] = useState(false);
+  const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
+
+  // Check if user is pharmacist (from staff info or admin)
+  const isPharmacist =
+    staffInfo?.department === "Farmasi" ||
+    staffInfo?.position === "Apoteker" ||
+    user?.role === "admin";
 
   useEffect(() => {
     loadPrescriptions();
@@ -40,7 +56,7 @@ export default function PharmacyPage() {
   const loadPrescriptions = async () => {
     try {
       const res = await api.get("/prescriptions/pending");
-      setPrescriptions(res.data);
+      setPrescriptions(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Failed to load prescriptions:", error);
     } finally {
@@ -49,15 +65,56 @@ export default function PharmacyPage() {
   };
 
   const handleDispense = async (id: string) => {
-    if (!confirm("Konfirmasi penyerahan obat?")) return;
+    // Only pharmacists can dispense
+    if (!isPharmacist && user?.role !== "admin") {
+      Swal.fire({
+        icon: "error",
+        title: "Akses Ditolak",
+        text: "Hanya Apoteker yang dapat menyerahkan obat",
+        confirmButtonColor: "#dc2626",
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: "Konfirmasi Penyerahan Obat",
+      html: `
+        <p>Apakah Anda yakin ingin menyerahkan obat untuk pasien:</p>
+        <p><strong>${selectedPrescription?.patient.name}</strong></p>
+        <p style="font-size: 0.9rem; color: #666;">No. RM: ${selectedPrescription?.patient.medicalRecordNumber}</p>
+      `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Serahkan Obat",
+      cancelButtonText: "Batal",
+    });
+
+    if (!result.isConfirmed) return;
 
     setDispensing(true);
     try {
       await api.post(`/prescriptions/${id}/dispense`);
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Obat telah diserahkan kepada pasien",
+        confirmButtonColor: "#16a34a",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
       setSelectedPrescription(null);
       loadPrescriptions();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Gagal menyerahkan obat");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: error.response?.data?.message || "Gagal menyerahkan obat",
+        confirmButtonColor: "#dc2626",
+      });
     } finally {
       setDispensing(false);
     }
@@ -76,6 +133,19 @@ export default function PharmacyPage() {
     return (
       <div className="loading">
         <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  // Show access denied if not pharmacist
+  if (!isPharmacist && user?.role !== "admin") {
+    return (
+      <div className={styles.container}>
+        <div className={styles.accessDenied}>
+          <FiAlertCircle size={48} />
+          <h2>Akses Ditolak</h2>
+          <p>Halaman ini hanya dapat diakses oleh bagian Farmasi/Apoteker</p>
+        </div>
       </div>
     );
   }
