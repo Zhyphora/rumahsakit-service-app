@@ -1,16 +1,25 @@
 import { Request, Response } from "express";
 import { PatientService } from "../services/PatientService";
+import { PrescriptionService } from "../services/PrescriptionService";
+import {
+  sendSuccess,
+  sendCreated,
+  sendError,
+  sendNotFound,
+  sendServerError,
+} from "../utils/response";
 
 export class PatientController {
   private patientService = new PatientService();
+  private prescriptionService = new PrescriptionService();
 
   getPatients = async (req: Request, res: Response): Promise<void> => {
     try {
       const { search } = req.query;
       const patients = await this.patientService.getPatients(search as string);
-      res.json(patients);
+      sendSuccess(res, patients, "Patients retrieved successfully");
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      sendServerError(res, error, "Gagal memuat data pasien");
     }
   };
 
@@ -18,21 +27,21 @@ export class PatientController {
     try {
       const patient = await this.patientService.getPatientById(req.params.id);
       if (!patient) {
-        res.status(404).json({ message: "Patient not found" });
+        sendNotFound(res, "Pasien tidak ditemukan");
         return;
       }
-      res.json(patient);
+      sendSuccess(res, patient, "Patient retrieved successfully");
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      sendServerError(res, error, "Gagal memuat data pasien");
     }
   };
 
   createPatient = async (req: Request, res: Response): Promise<void> => {
     try {
       const patient = await this.patientService.createPatient(req.body);
-      res.status(201).json(patient);
+      sendCreated(res, patient, "Pasien berhasil ditambahkan");
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      sendError(res, error.message || "Gagal menambah pasien");
     }
   };
 
@@ -42,18 +51,30 @@ export class PatientController {
         req.params.id,
         req.body
       );
-      res.json(patient);
+      if (!patient) {
+        sendNotFound(res, "Pasien tidak ditemukan");
+        return;
+      }
+      sendSuccess(res, patient, "Data pasien berhasil diperbarui");
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      sendError(res, error.message || "Gagal memperbarui data pasien");
     }
   };
 
   deletePatient = async (req: Request, res: Response): Promise<void> => {
     try {
-      await this.patientService.deletePatient(req.params.id);
-      res.json({ message: "Patient deleted successfully" });
+      const { permanent } = req.query;
+      const isPermanent = permanent === "true";
+
+      if (isPermanent) {
+        await this.patientService.deletePatient(req.params.id, true);
+        sendSuccess(res, null, "Pasien berhasil dihapus permanen");
+      } else {
+        await this.patientService.softDeletePatient(req.params.id);
+        sendSuccess(res, null, "Pasien berhasil dinonaktifkan");
+      }
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      sendError(res, error.message || "Gagal menghapus pasien");
     }
   };
 
@@ -62,12 +83,59 @@ export class PatientController {
       const { mrn } = req.params;
       const patient = await this.patientService.searchByMRN(mrn);
       if (!patient) {
-        res.status(404).json({ message: "Patient not found" });
+        sendNotFound(res, "Pasien tidak ditemukan");
         return;
       }
-      res.json(patient);
+      sendSuccess(res, patient, "Patient found");
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      sendServerError(res, error, "Gagal mencari pasien");
+    }
+  };
+
+  // Get patient medical history (prescriptions + visits)
+  getMedicalHistory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+
+      // Get patient
+      const patient = await this.patientService.getPatientById(id);
+      if (!patient) {
+        sendNotFound(res, "Pasien tidak ditemukan");
+        return;
+      }
+
+      // Get prescriptions/medical history
+      const prescriptions =
+        await this.prescriptionService.getPatientMedicalHistory(id);
+
+      const medicalHistory = prescriptions.map((p) => ({
+        id: p.id,
+        date: p.createdAt,
+        diagnosis: p.diagnosis || "Tidak ada diagnosis",
+        doctor: p.doctor?.user?.name || "Dokter",
+        polyclinic: p.doctor?.polyclinic?.name || "Poliklinik",
+        notes: p.notes,
+        status: p.status,
+        items:
+          p.items?.map((item) => ({
+            id: item.id,
+            name: item.item?.name || "Obat",
+            quantity: item.quantity,
+            dosage: item.dosage,
+            instructions: item.instructions,
+          })) || [],
+      }));
+
+      sendSuccess(
+        res,
+        {
+          patient,
+          medicalHistory,
+        },
+        "Rekam medis berhasil dimuat"
+      );
+    } catch (error: any) {
+      sendServerError(res, error, "Gagal memuat rekam medis");
     }
   };
 }

@@ -51,6 +51,9 @@ export class Patient {
   @Column({ type: "text", nullable: true })
   allergies?: string;
 
+  @Column({ name: "bpjs_number", nullable: true })
+  bpjsNumber?: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

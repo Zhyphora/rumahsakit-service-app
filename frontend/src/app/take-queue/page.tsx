@@ -3,6 +3,13 @@
 import { useState, useEffect } from "react";
 import { Polyclinic } from "@/types";
 import styles from "./take-queue.module.css";
+import {
+  FiClock,
+  FiUser,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiMonitor,
+} from "react-icons/fi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
@@ -10,7 +17,7 @@ interface AvailableDoctor {
   id: string;
   name: string;
   specialization: string;
-  schedule: string;
+  schedule: any;
   completedToday: number;
   isServing: boolean;
   polyclinic: {
@@ -20,16 +27,59 @@ interface AvailableDoctor {
   };
 }
 
+// Helper to check if doctor is available now based on schedule
+const isDoctorAvailable = (
+  schedule: any
+): { available: boolean; scheduleText: string } => {
+  if (!schedule) return { available: false, scheduleText: "Tidak ada jadwal" };
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentTime = currentHour * 60 + currentMinutes;
+
+  const days = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+  const today = days[now.getDay()];
+
+  const todaySchedule = schedule[today];
+  if (!todaySchedule)
+    return { available: false, scheduleText: "Tidak bertugas hari ini" };
+
+  const [startHour, startMin] = todaySchedule.start.split(":").map(Number);
+  const [endHour, endMin] = todaySchedule.end.split(":").map(Number);
+  const startTime = startHour * 60 + startMin;
+  const endTime = endHour * 60 + endMin;
+
+  const scheduleText = `${todaySchedule.start} - ${todaySchedule.end}`;
+
+  if (currentTime >= startTime && currentTime <= endTime) {
+    return { available: true, scheduleText };
+  } else if (currentTime < startTime) {
+    return { available: true, scheduleText: `Mulai ${todaySchedule.start}` };
+  } else {
+    return { available: false, scheduleText: `Sudah tutup (${scheduleText})` };
+  }
+};
+
 export default function TakeQueuePage() {
   const [polyclinics, setPolyclinics] = useState<Polyclinic[]>([]);
   const [selectedPoly, setSelectedPoly] = useState<string>("");
+  const [selectedDoctor, setSelectedDoctor] = useState<string>("");
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
+  const [bpjsNumber, setBpjsNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [queueResult, setQueueResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [doctors, setDoctors] = useState<AvailableDoctor[]>([]);
-  const [loadingDoctors, setLoadingDoctors] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/queue/polyclinics`)
@@ -37,17 +87,35 @@ export default function TakeQueuePage() {
       .then(setPolyclinics)
       .catch(console.error);
 
-    // Load available doctors
     fetch(`${API_URL}/doctors/available`)
       .then((res) => res.json())
       .then(setDoctors)
       .catch(console.error);
   }, []);
 
-  // Get doctors for selected polyclinic
-  const selectedPolyDoctors = doctors.filter(
-    (doc) => doc.polyclinic?.id === selectedPoly
-  );
+  // Get doctors for selected polyclinic with availability check
+  const selectedPolyDoctors = doctors
+    .filter((doc) => doc.polyclinic?.id === selectedPoly)
+    .map((doc) => ({
+      ...doc,
+      ...isDoctorAvailable(doc.schedule),
+    }));
+
+  // Get available doctors count
+  const availableDoctorsCount = selectedPolyDoctors.filter(
+    (d) => d.available
+  ).length;
+
+  const handleSelectPoly = (polyId: string) => {
+    setSelectedPoly(polyId);
+    setSelectedDoctor(""); // Reset doctor when changing polyclinic
+  };
+
+  const handleSelectDoctor = (doctorId: string, available: boolean) => {
+    if (available) {
+      setSelectedDoctor(doctorId);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,19 +128,23 @@ export default function TakeQueuePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           polyclinicId: selectedPoly,
+          doctorId: selectedDoctor || undefined,
           patientName,
           patientPhone,
+          bpjsNumber: bpjsNumber || undefined,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to take queue number");
+        const data = await response.json();
+        throw new Error(data.message || "Failed to take queue number");
       }
 
       const result = await response.json();
       setQueueResult(result);
       setPatientName("");
       setPatientPhone("");
+      setBpjsNumber("");
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan");
     } finally {
@@ -83,7 +155,13 @@ export default function TakeQueuePage() {
   const handleNewQueue = () => {
     setQueueResult(null);
     setSelectedPoly("");
+    setSelectedDoctor("");
   };
+
+  // Estimate wait time based on queue position (15 min per patient)
+  const estimatedWaitMinutes = queueResult
+    ? Math.max(0, (queueResult.queueNumber - 1) * 15)
+    : 0;
 
   if (queueResult) {
     return (
@@ -104,6 +182,12 @@ export default function TakeQueuePage() {
             <p>
               <strong>Nama:</strong> {queueResult.patient?.name}
             </p>
+            {queueResult.doctor && (
+              <p>
+                <strong>Dokter:</strong>{" "}
+                {queueResult.doctor?.user?.name || queueResult.doctor?.name}
+              </p>
+            )}
             <p>
               <strong>Tanggal:</strong> {new Date().toLocaleDateString("id-ID")}
             </p>
@@ -111,8 +195,27 @@ export default function TakeQueuePage() {
               <strong>Waktu:</strong> {new Date().toLocaleTimeString("id-ID")}
             </p>
           </div>
+
+          {/* Monitor Guidance */}
+          <div className={styles.monitorGuidance}>
+            <FiMonitor size={32} />
+            <div className={styles.monitorText}>
+              <strong>Perhatikan Monitor</strong>
+              <span>
+                Silakan pantau layar monitor untuk mengetahui kapan nomor
+                antrian Anda dipanggil
+              </span>
+              {estimatedWaitMinutes > 0 && (
+                <span className={styles.estimatedTime}>
+                  <FiClock size={14} /> Perkiraan tunggu: ~
+                  {estimatedWaitMinutes} menit
+                </span>
+              )}
+            </div>
+          </div>
+
           <div className={styles.ticketNote}>
-            Harap menunggu nomor antrian Anda dipanggil
+            Harap datang tepat waktu dan tunjukkan nomor antrian ini
           </div>
           <button onClick={handleNewQueue} className={styles.newBtn}>
             Ambil Antrian Baru
@@ -143,7 +246,7 @@ export default function TakeQueuePage() {
                   className={`${styles.polyBtn} ${
                     selectedPoly === poly.id ? styles.selected : ""
                   }`}
-                  onClick={() => setSelectedPoly(poly.id)}
+                  onClick={() => handleSelectPoly(poly.id)}
                 >
                   <span className={styles.polyCode}>{poly.code}</span>
                   <span className={styles.polyName}>{poly.name}</span>
@@ -152,16 +255,33 @@ export default function TakeQueuePage() {
             </div>
           </div>
 
-          {/* Show doctors for selected polyclinic */}
+          {/* Doctor Selection */}
           {selectedPoly && (
             <div className={styles.doctorSection}>
-              <label>Dokter Bertugas</label>
+              <label>
+                Pilih Dokter
+                {availableDoctorsCount > 0 && (
+                  <span className={styles.availableCount}>
+                    ({availableDoctorsCount} tersedia)
+                  </span>
+                )}
+              </label>
               {selectedPolyDoctors.length > 0 ? (
                 <div className={styles.doctorList}>
                   {selectedPolyDoctors.map((doctor) => (
-                    <div key={doctor.id} className={styles.doctorCard}>
+                    <div
+                      key={doctor.id}
+                      className={`${styles.doctorCard} ${
+                        selectedDoctor === doctor.id
+                          ? styles.doctorSelected
+                          : ""
+                      } ${!doctor.available ? styles.doctorUnavailable : ""}`}
+                      onClick={() =>
+                        handleSelectDoctor(doctor.id, doctor.available)
+                      }
+                    >
                       <div className={styles.doctorAvatar}>
-                        {doctor.name.charAt(0)}
+                        <FiUser size={20} />
                       </div>
                       <div className={styles.doctorInfo}>
                         <span className={styles.doctorName}>{doctor.name}</span>
@@ -169,16 +289,18 @@ export default function TakeQueuePage() {
                           {doctor.specialization}
                         </span>
                         <span className={styles.doctorSchedule}>
-                          ⏰ {doctor.schedule}
+                          <FiClock size={12} /> {doctor.scheduleText}
                         </span>
                       </div>
                       <div className={styles.doctorStatus}>
-                        {doctor.isServing ? (
-                          <span className={styles.statusServing}>
-                            Sedang Melayani
+                        {doctor.available ? (
+                          <span className={styles.statusReady}>
+                            <FiCheckCircle size={14} /> Tersedia
                           </span>
                         ) : (
-                          <span className={styles.statusReady}>Tersedia</span>
+                          <span className={styles.statusUnavailable}>
+                            <FiAlertCircle size={14} /> Tidak Tersedia
+                          </span>
                         )}
                       </div>
                     </div>
@@ -186,14 +308,14 @@ export default function TakeQueuePage() {
                 </div>
               ) : (
                 <div className={styles.noDoctor}>
-                  Tidak ada dokter yang bertugas hari ini untuk poliklinik ini
+                  Tidak ada dokter untuk poliklinik ini
                 </div>
               )}
             </div>
           )}
 
           <div className={styles.formGroup}>
-            <label htmlFor="patientName">Nama Lengkap</label>
+            <label htmlFor="patientName">Nama Lengkap *</label>
             <input
               id="patientName"
               type="text"
@@ -214,6 +336,19 @@ export default function TakeQueuePage() {
               onChange={(e) => setPatientPhone(e.target.value)}
               className={styles.input}
               placeholder="08xxxxxxxxxx"
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="bpjsNumber">Nomor BPJS (Opsional)</label>
+            <input
+              id="bpjsNumber"
+              type="text"
+              value={bpjsNumber}
+              onChange={(e) => setBpjsNumber(e.target.value)}
+              className={styles.input}
+              placeholder="Masukkan nomor BPJS jika ada"
+              maxLength={13}
             />
           </div>
 

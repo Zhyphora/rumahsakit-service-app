@@ -2,8 +2,30 @@
 
 import { useState, useEffect } from "react";
 import api from "@/services/api";
-import { Document } from "@/types";
+import { Document, Patient } from "@/types";
 import styles from "./documents.module.css";
+import DocumentAccessModal from "./DocumentAccessModal";
+import toast from "react-hot-toast";
+import {
+  FiFile,
+  FiImage,
+  FiFileText,
+  FiGrid,
+  FiFolder,
+  FiLock,
+  FiSettings,
+  FiDownload,
+  FiTrash2,
+} from "react-icons/fi";
+
+const getFileIcon = (fileType?: string) => {
+  if (fileType?.includes("pdf"))
+    return <FiFileText size={24} color="#ef4444" />;
+  if (fileType?.includes("image")) return <FiImage size={24} color="#3b82f6" />;
+  if (fileType?.includes("word")) return <FiFile size={24} color="#2563eb" />;
+  if (fileType?.includes("excel")) return <FiGrid size={24} color="#059669" />;
+  return <FiFolder size={24} color="#6b7280" />;
+};
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -16,6 +38,10 @@ export default function DocumentsPage() {
     isConfidential: false,
   });
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
+    null
+  );
+  const [showAccessModal, setShowAccessModal] = useState(false);
 
   useEffect(() => {
     loadDocuments();
@@ -25,8 +51,8 @@ export default function DocumentsPage() {
     try {
       const response = await api.get("/documents");
       setDocuments(response.data);
-    } catch (error) {
-      console.error("Failed to load documents:", error);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Gagal memuat dokumen");
     } finally {
       setIsLoading(false);
     }
@@ -47,6 +73,7 @@ export default function DocumentsPage() {
       await api.post("/documents", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      toast.success("Dokumen berhasil diupload");
       setShowUploadModal(false);
       setSelectedFile(null);
       setUploadData({
@@ -56,8 +83,8 @@ export default function DocumentsPage() {
         isConfidential: false,
       });
       loadDocuments();
-    } catch (error) {
-      alert("Gagal mengupload dokumen");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Gagal mengupload dokumen");
     }
   };
 
@@ -73,8 +100,26 @@ export default function DocumentsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (error) {
-      alert("Gagal mengunduh dokumen");
+      toast.success("Download dimulai");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Gagal mengunduh dokumen");
+    }
+  };
+
+  const handleOpenAccessModal = (doc: Document) => {
+    setSelectedDocument(doc);
+    setShowAccessModal(true);
+  };
+
+  const handleDeleteDocument = async (doc: Document) => {
+    if (!confirm(`Yakin ingin menghapus dokumen "${doc.title}"?`)) return;
+
+    try {
+      await api.delete(`/documents/${doc.id}`);
+      toast.success("Dokumen berhasil dihapus");
+      loadDocuments();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Gagal menghapus dokumen");
     }
   };
 
@@ -108,35 +153,45 @@ export default function DocumentsPage() {
       <div className={styles.grid}>
         {documents.map((doc) => (
           <div key={doc.id} className={styles.docCard}>
-            <div className={styles.docIcon}>
-              {doc.fileType?.includes("pdf")
-                ? "📄"
-                : doc.fileType?.includes("image")
-                ? "🖼️"
-                : doc.fileType?.includes("word")
-                ? "📝"
-                : doc.fileType?.includes("excel")
-                ? "📊"
-                : "📁"}
-            </div>
+            <div className={styles.docIcon}>{getFileIcon(doc.fileType)}</div>
             <div className={styles.docInfo}>
               <h3 className={styles.docTitle}>{doc.title}</h3>
               <p className={styles.docMeta}>
                 {formatFileSize(doc.fileSize)} • {doc.category || "General"}
                 {doc.isConfidential && (
-                  <span className={styles.confidential}>🔒</span>
+                  <span className={styles.confidential}>
+                    <FiLock size={12} />
+                  </span>
                 )}
               </p>
               <p className={styles.docDate}>
                 {new Date(doc.createdAt).toLocaleDateString("id-ID")}
               </p>
             </div>
-            <button
-              onClick={() => handleDownload(doc)}
-              className={styles.downloadBtn}
-            >
-              ⬇️
-            </button>
+            <div className={styles.docActions}>
+              <button
+                onClick={() => handleOpenAccessModal(doc)}
+                className={styles.settingsBtn}
+                title="Pengaturan Akses"
+              >
+                <FiSettings size={16} />
+              </button>
+              <button
+                onClick={() => handleDownload(doc)}
+                className={styles.downloadBtn}
+                title="Download"
+              >
+                <FiDownload size={16} />
+              </button>
+              <button
+                onClick={() => handleDeleteDocument(doc)}
+                className={styles.settingsBtn}
+                title="Hapus"
+                style={{ color: "#dc2626" }}
+              >
+                <FiTrash2 size={16} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -192,6 +247,8 @@ export default function DocumentsPage() {
                   <option value="medical_record">Medical Record</option>
                   <option value="lab_result">Lab Result</option>
                   <option value="prescription">Prescription</option>
+                  <option value="bpjs">Tagihan BPJS</option>
+                  <option value="invoice">Invoice</option>
                 </select>
               </div>
               <div className={styles.formGroup}>
@@ -224,6 +281,18 @@ export default function DocumentsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Access Control Modal */}
+      {showAccessModal && selectedDocument && (
+        <DocumentAccessModal
+          document={selectedDocument}
+          onClose={() => {
+            setShowAccessModal(false);
+            setSelectedDocument(null);
+          }}
+          onUpdate={loadDocuments}
+        />
       )}
     </div>
   );

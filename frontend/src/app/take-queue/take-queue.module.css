@@ -385,3 +385,99 @@
     font-size: 2.5rem;
   }
 }
+
+/* Doctor Selection Enhancements */
+.doctorCard {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.doctorCard:hover:not(.doctorUnavailable) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.doctorSelected {
+  border: 2px solid #2563eb !important;
+  background: rgba(37, 99, 235, 0.1) !important;
+}
+
+.doctorUnavailable {
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.statusUnavailable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.75rem;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+}
+
+.statusReady {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.availableCount {
+  font-weight: 400;
+  color: #059669;
+  font-size: 0.875rem;
+  margin-left: 0.5rem;
+}
+
+/* Monitor Guidance */
+.monitorGuidance {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 0.75rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.monitorGuidance svg {
+  color: #2563eb;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.monitorText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.monitorText strong {
+  color: #1e40af;
+  font-size: 1rem;
+}
+
+.monitorText span {
+  color: #3b82f6;
+  font-size: 0.875rem;
+}
+
+.estimatedTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: white;
+  border-radius: 9999px;
+  font-weight: 600;
+  color: #1d4ed8;
+  width: fit-content;
+}

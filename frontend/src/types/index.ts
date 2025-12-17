@@ -12,6 +12,7 @@ export interface User {
 export interface Doctor {
   id: string;
   userId: string;
+  user?: User;
   specialization: string;
   licenseNumber?: string;
   polyclinicId?: string;

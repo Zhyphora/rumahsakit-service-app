@@ -12,8 +12,9 @@ router.use(roleMiddleware("admin", "doctor", "staff"));
 router.get("/", patientController.getPatients);
 router.get("/mrn/:mrn", patientController.searchByMRN);
 router.get("/:id", patientController.getPatientById);
+router.get("/:id/medical-history", patientController.getMedicalHistory);
 router.post("/", patientController.createPatient);
 router.put("/:id", patientController.updatePatient);
-router.delete("/:id", roleMiddleware("admin"), patientController.deletePatient);
+router.delete("/:id", patientController.deletePatient);
 
 export default router;

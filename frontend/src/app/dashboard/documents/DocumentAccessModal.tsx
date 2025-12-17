@@ -12,6 +12,9 @@ import {
   AccessType,
 } from "@/types";
 import styles from "./documents.module.css";
+import toast from "react-hot-toast";
+import { FiLock, FiUsers, FiHome, FiUser, FiX } from "react-icons/fi";
+import { MdLocalHospital } from "react-icons/md";
 
 interface DocumentAccessModalProps {
   document: Document;
@@ -195,7 +198,8 @@ export default function DocumentAccessModal({
         <div className={styles.accessModalHeader}>
           <h2>Pengaturan Akses</h2>
           <p className={styles.docName}>
-            🔒 {document.title}
+            <FiLock size={14} style={{ marginRight: 4 }} />
+            {document.title}
             {document.isConfidential && " (Rahasia)"}
           </p>
         </div>
@@ -216,10 +220,18 @@ export default function DocumentAccessModal({
                 <div key={access.id} className={styles.accessItem}>
                   <div className={styles.accessInfo}>
                     <span className={styles.criteriaType}>
-                      {access.accessCriteriaType === "role" && "👥"}
-                      {access.accessCriteriaType === "polyclinic" && "🏥"}
-                      {access.accessCriteriaType === "doctor" && "👨‍⚕️"}
-                      {access.accessCriteriaType === "user" && "👤"}
+                      {access.accessCriteriaType === "role" && (
+                        <FiUsers size={14} />
+                      )}
+                      {access.accessCriteriaType === "polyclinic" && (
+                        <MdLocalHospital size={14} />
+                      )}
+                      {access.accessCriteriaType === "doctor" && (
+                        <FiUser size={14} />
+                      )}
+                      {access.accessCriteriaType === "user" && (
+                        <FiUser size={14} />
+                      )}
                     </span>
                     <span className={styles.criteriaValue}>
                       {getCriteriaLabel(access)}
@@ -232,7 +244,7 @@ export default function DocumentAccessModal({
                     onClick={() => handleRevokeAccess(access.id)}
                     className={styles.revokeBtn}
                   >
-                    ✕
+                    <FiX size={14} />
                   </button>
                 </div>
               ))}

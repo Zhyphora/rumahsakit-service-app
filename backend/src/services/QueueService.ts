@@ -46,6 +46,8 @@ export class QueueService {
     patientId?: string;
     patientName?: string;
     patientPhone?: string;
+    doctorId?: string;
+    bpjsNumber?: string;
   }) {
     // Find or create patient
     let patient: Patient | null = null;
@@ -61,12 +63,19 @@ export class QueueService {
         name: data.patientName,
         medicalRecordNumber: mrn,
         phone: data.patientPhone,
+        bpjsNumber: data.bpjsNumber,
       });
       await this.patientRepository.save(patient);
     }
 
     if (!patient) {
       throw new Error("Patient information required");
+    }
+
+    // Update BPJS if provided and patient exists
+    if (data.bpjsNumber && patient && !patient.bpjsNumber) {
+      patient.bpjsNumber = data.bpjsNumber;
+      await this.patientRepository.save(patient);
     }
 
     // Get counter and increment
@@ -77,10 +86,11 @@ export class QueueService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Create queue number
+    // Create queue number with optional doctor assignment
     const queueNumber = this.queueNumberRepository.create({
       polyclinicId: data.polyclinicId,
       patientId: patient.id,
+      doctorId: data.doctorId || undefined,
       queueNumber: counter.lastNumber,
       queueDate: today,
       status: "waiting",
@@ -92,7 +102,7 @@ export class QueueService {
     // Load relations for response
     const savedQueue = await this.queueNumberRepository.findOne({
       where: { id: queueNumber.id },
-      relations: ["polyclinic", "patient"],
+      relations: ["polyclinic", "patient", "doctor", "doctor.user"],
     });
 
     // Broadcast update

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import api from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQueueSocket } from "@/hooks/useQueueSocket";
 import { Polyclinic, QueueState, QueueNumber, Item } from "@/types";
 import styles from "./queue.module.css";
@@ -21,6 +22,7 @@ interface PrescriptionItem {
 }
 
 export default function QueuePage() {
+  const { user } = useAuth();
   const [allQueues, setAllQueues] = useState<PolyclinicQueue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,25 +44,50 @@ export default function QueuePage() {
     loadItems();
     const interval = setInterval(loadAllQueues, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const loadAllQueues = async () => {
     try {
-      const polysRes = await api.get("/queue/polyclinics");
-      const polyclinics = polysRes.data;
+      // For doctors, only show their assigned polyclinic
+      if (user?.role === "doctor" && user?.doctor?.polyclinicId) {
+        const polyclinicId = user.doctor.polyclinicId;
+        const polyclinicName = user.doctor.polyclinic?.name || "Poliklinik";
+        const polyclinicCode = user.doctor.polyclinic?.code || "POLI";
 
-      const queuesData: PolyclinicQueue[] = await Promise.all(
-        polyclinics.map(async (poly: Polyclinic) => {
-          try {
-            const queueRes = await api.get(`/queue/polyclinic/${poly.id}`);
-            return { polyclinic: poly, data: queueRes.data };
-          } catch (e) {
-            return { polyclinic: poly, data: null };
-          }
-        })
-      );
+        try {
+          const queueRes = await api.get(`/queue/polyclinic/${polyclinicId}`);
+          setAllQueues([
+            {
+              polyclinic: {
+                id: polyclinicId,
+                name: polyclinicName,
+                code: polyclinicCode,
+                isActive: true,
+              },
+              data: queueRes.data,
+            },
+          ]);
+        } catch (e) {
+          setAllQueues([]);
+        }
+      } else {
+        // For admin/staff, show all polyclinics
+        const polysRes = await api.get("/queue/polyclinics");
+        const polyclinics = polysRes.data;
 
-      setAllQueues(queuesData);
+        const queuesData: PolyclinicQueue[] = await Promise.all(
+          polyclinics.map(async (poly: Polyclinic) => {
+            try {
+              const queueRes = await api.get(`/queue/polyclinic/${poly.id}`);
+              return { polyclinic: poly, data: queueRes.data };
+            } catch (e) {
+              return { polyclinic: poly, data: null };
+            }
+          })
+        );
+
+        setAllQueues(queuesData);
+      }
     } catch (error) {
       console.error("Failed to load queues:", error);
     } finally {

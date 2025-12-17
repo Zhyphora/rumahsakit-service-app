@@ -45,20 +45,42 @@ export class PatientService {
   async updatePatient(id: string, data: Partial<Patient>) {
     const patient = await this.patientRepository.findOne({ where: { id } });
     if (!patient) {
-      throw new Error("Patient not found");
+      return null;
     }
 
     Object.assign(patient, data);
     return this.patientRepository.save(patient);
   }
 
-  async deletePatient(id: string) {
+  // Soft delete - just marks as inactive by appending _DELETED to MRN
+  async softDeletePatient(id: string) {
     const patient = await this.patientRepository.findOne({ where: { id } });
     if (!patient) {
       throw new Error("Patient not found");
     }
 
-    return this.patientRepository.remove(patient);
+    // Mark as deleted by modifying MRN
+    if (!patient.medicalRecordNumber.includes("_DELETED")) {
+      patient.medicalRecordNumber = `${
+        patient.medicalRecordNumber
+      }_DELETED_${Date.now()}`;
+    }
+
+    return this.patientRepository.save(patient);
+  }
+
+  // Permanent delete
+  async deletePatient(id: string, permanent: boolean = false) {
+    const patient = await this.patientRepository.findOne({ where: { id } });
+    if (!patient) {
+      throw new Error("Patient not found");
+    }
+
+    if (permanent) {
+      return this.patientRepository.remove(patient);
+    } else {
+      return this.softDeletePatient(id);
+    }
   }
 
   async searchByMRN(mrn: string) {

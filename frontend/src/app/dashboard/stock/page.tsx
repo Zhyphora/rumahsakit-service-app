@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import api from "@/services/api";
 import { Item, StockOpname } from "@/types";
 import styles from "./stock.module.css";
+import toast from "react-hot-toast";
+import { FiPackage, FiClipboard } from "react-icons/fi";
 
 export default function StockPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -25,8 +27,8 @@ export default function StockPage() {
       ]);
       setItems(itemsRes.data);
       setOpnames(opnamesRes.data);
-    } catch (error) {
-      console.error("Failed to load stock data:", error);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Gagal memuat data stok");
     } finally {
       setIsLoading(false);
     }
@@ -43,9 +45,12 @@ export default function StockPage() {
   const handleCreateOpname = async () => {
     try {
       await api.post("/stock/opname", { notes: "Stock opname harian" });
+      toast.success("Stock opname berhasil dibuat");
       loadData();
-    } catch (error) {
-      alert("Gagal membuat stock opname");
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Gagal membuat stock opname"
+      );
     }
   };
 
@@ -70,7 +75,8 @@ export default function StockPage() {
           }`}
           onClick={() => setActiveTab("items")}
         >
-          📦 Daftar Barang
+          <FiPackage size={16} style={{ marginRight: 8 }} />
+          Daftar Barang
         </button>
         <button
           className={`${styles.tab} ${
@@ -78,7 +84,8 @@ export default function StockPage() {
           }`}
           onClick={() => setActiveTab("opname")}
         >
-          📋 Stock Opname
+          <FiClipboard size={16} style={{ marginRight: 8 }} />
+          Stock Opname
         </button>
       </div>
 
