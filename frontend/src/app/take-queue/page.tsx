@@ -31,12 +31,33 @@ interface AvailableDoctor {
 const isDoctorAvailable = (
   schedule: any
 ): { available: boolean; scheduleText: string } => {
-  if (!schedule) return { available: false, scheduleText: "Tidak ada jadwal" };
+  if (!schedule) return { available: true, scheduleText: "Tersedia" };
 
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinutes = now.getMinutes();
   const currentTime = currentHour * 60 + currentMinutes;
+
+  // If schedule is a string like "08:00 - 14:00" or "13:00 - 20:00"
+  if (typeof schedule === "string") {
+    const match = schedule.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+    if (match) {
+      const startTime = parseInt(match[1]) * 60 + parseInt(match[2]);
+      const endTime = parseInt(match[3]) * 60 + parseInt(match[4]);
+
+      if (currentTime >= startTime && currentTime <= endTime) {
+        return { available: true, scheduleText: schedule };
+      } else if (currentTime < startTime) {
+        return {
+          available: true,
+          scheduleText: `Mulai ${match[1]}:${match[2]}`,
+        };
+      } else {
+        return { available: false, scheduleText: `Sudah tutup (${schedule})` };
+      }
+    }
+    return { available: true, scheduleText: schedule };
+  }
 
   const days = [
     "sunday",

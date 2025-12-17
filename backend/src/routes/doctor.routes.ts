@@ -7,6 +7,7 @@ const doctorController = new DoctorController();
 // Public routes (no auth required for display)
 router.get("/", doctorController.getAllDoctors);
 router.get("/available", doctorController.getAvailableDoctors);
+router.get("/queue-display", doctorController.getDoctorQueueDisplay);
 router.get("/:id", doctorController.getDoctorById);
 
 export default router;

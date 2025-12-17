@@ -1,24 +1,79 @@
 "use client";
 
-import { useQueueDisplay } from "@/hooks/useQueueSocket";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./display.module.css";
+import { FiClock, FiUser } from "react-icons/fi";
+
+interface DoctorQueueData {
+  doctor: {
+    id: string;
+    name: string;
+    specialization: string;
+  };
+  polyclinic: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  currentNumber: number;
+  currentPatient: string | null;
+  status: "waiting" | "called" | "serving";
+  waitingCount: number;
+  schedule: string;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+// Check if doctor is available based on schedule time
+const isDoctorAvailable = (schedule: string): boolean => {
+  if (!schedule) return true;
+
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+
+  const match = schedule.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+  if (match) {
+    const startTime = parseInt(match[1]) * 60 + parseInt(match[2]);
+    const endTime = parseInt(match[3]) * 60 + parseInt(match[4]);
+    return currentTime >= startTime && currentTime <= endTime;
+  }
+  return true;
+};
 
 export default function QueueDisplayPage() {
-  const { displayData, connected } = useQueueDisplay();
+  const [displayData, setDisplayData] = useState<DoctorQueueData[]>([]);
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     setCurrentTime(new Date());
+    loadDisplayData();
 
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
 
-    return () => clearInterval(timer);
+    // Refresh data every 5 seconds
+    const dataInterval = setInterval(() => {
+      loadDisplayData();
+    }, 5000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(dataInterval);
+    };
   }, []);
+
+  const loadDisplayData = async () => {
+    try {
+      const res = await fetch(`${API_URL}/doctors/queue-display`);
+      const data = await res.json();
+      setDisplayData(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load display data:", error);
+    }
+  };
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("id-ID", {
@@ -33,6 +88,11 @@ export default function QueueDisplayPage() {
     return date.toLocaleTimeString("id-ID");
   };
 
+  // Filter only available doctors
+  const availableDoctors = displayData.filter((item) =>
+    isDoctorAvailable(item.schedule)
+  );
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -46,39 +106,58 @@ export default function QueueDisplayPage() {
       </header>
 
       <div className={styles.grid}>
-        {displayData.map((item) => (
+        {availableDoctors.map((item) => (
           <div
-            key={item.polyclinic.id}
+            key={item.doctor.id}
             className={`${styles.queueCard} ${
               item.status === "serving" ? styles.serving : ""
             } ${item.status === "called" ? styles.called : ""}`}
           >
-            <div className={styles.polyName}>{item.polyclinic.name}</div>
+            <div className={styles.doctorHeader}>
+              <div className={styles.doctorAvatar}>
+                <FiUser size={20} />
+              </div>
+              <div className={styles.doctorInfo}>
+                <span className={styles.doctorName}>{item.doctor.name}</span>
+                <span className={styles.doctorSpec}>
+                  {item.doctor.specialization}
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.polyName}>
+              <span className={styles.polyCode}>{item.polyclinic.code}</span>
+              {item.polyclinic.name}
+            </div>
+
             <div className={styles.queueNumber}>
               {item.polyclinic.code}-
               {String(item.currentNumber).padStart(3, "0")}
             </div>
+
             <div className={styles.status}>
               <span className={styles.statusDot}></span>
               {item.status === "serving" && "Sedang Dilayani"}
               {item.status === "called" && "Dipanggil"}
               {item.status === "waiting" && "Menunggu"}
             </div>
+
             <div className={styles.waitingCount}>
               {item.waitingCount} antrian menunggu
+            </div>
+
+            <div className={styles.scheduleInfo}>
+              <FiClock size={12} />
+              <span>{item.schedule}</span>
             </div>
           </div>
         ))}
       </div>
 
-      {displayData.length === 0 && (
+      {availableDoctors.length === 0 && (
         <div className={styles.emptyState}>
-          <p>Belum ada data antrian</p>
-          <p className={styles.hint}>
-            {connected
-              ? "Menunggu data dari server..."
-              : "Menghubungkan ke server..."}
-          </p>
+          <p>Tidak ada dokter yang bertugas saat ini</p>
+          <p className={styles.hint}>Silakan kembali pada jam operasional</p>
         </div>
       )}
 

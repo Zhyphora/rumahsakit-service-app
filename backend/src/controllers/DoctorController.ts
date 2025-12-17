@@ -38,4 +38,17 @@ export class DoctorController {
       res.status(400).json({ message: error.message });
     }
   };
+
+  // Get doctor queue display data (for public display)
+  getDoctorQueueDisplay = async (
+    _req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const displayData = await this.doctorService.getDoctorQueueDisplay();
+      res.json(displayData);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
 }

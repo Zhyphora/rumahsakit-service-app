@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./doctors.module.css";
+import { FiClock, FiUser, FiCheckCircle, FiXCircle } from "react-icons/fi";
 
 interface Doctor {
   id: string;
@@ -17,6 +18,33 @@ interface Doctor {
   currentPatient: string | null;
   completedToday: number;
 }
+
+// Check if doctor is available based on schedule time
+const isDoctorAvailable = (
+  schedule: string
+): { available: boolean; statusText: string } => {
+  if (!schedule) return { available: true, statusText: "Tersedia" };
+
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+
+  // Parse schedule string like "08:00 - 14:00" or "13:00 - 20:00"
+  const match = schedule.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+  if (match) {
+    const startTime = parseInt(match[1]) * 60 + parseInt(match[2]);
+    const endTime = parseInt(match[3]) * 60 + parseInt(match[4]);
+
+    if (currentTime >= startTime && currentTime <= endTime) {
+      return { available: true, statusText: "Siap Melayani" };
+    } else if (currentTime < startTime) {
+      return { available: false, statusText: `Mulai ${match[1]}:${match[2]}` };
+    } else {
+      return { available: false, statusText: "Sudah Tutup" };
+    }
+  }
+
+  return { available: true, statusText: "Tersedia" };
+};
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -42,9 +70,10 @@ export default function DoctorsPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/doctors/available`
       );
       const data = await res.json();
-      setDoctors(data);
+      setDoctors(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load doctors:", error);
+      setDoctors([]);
     } finally {
       setIsLoading(false);
     }
@@ -87,58 +116,83 @@ export default function DoctorsPage() {
         </div>
       ) : (
         <div className={styles.doctorGrid}>
-          {doctors.map((doctor) => (
-            <div
-              key={doctor.id}
-              className={`${styles.doctorCard} ${
-                doctor.isServing ? styles.serving : styles.ready
-              }`}
-            >
-              <div className={styles.avatar}>{doctor.name.charAt(0)}</div>
-              <div className={styles.doctorInfo}>
-                <h2 className={styles.doctorName}>{doctor.name}</h2>
-                <p className={styles.specialization}>{doctor.specialization}</p>
-                <div className={styles.polyclinic}>
-                  <span className={styles.polyBadge}>
-                    {doctor.polyclinic.code}
-                  </span>
-                  <span>{doctor.polyclinic.name}</span>
+          {doctors.map((doctor) => {
+            const { available, statusText } = isDoctorAvailable(
+              doctor.schedule
+            );
+            const isActuallyAvailable = available && !doctor.isServing;
+
+            return (
+              <div
+                key={doctor.id}
+                className={`${styles.doctorCard} ${
+                  doctor.isServing
+                    ? styles.serving
+                    : available
+                    ? styles.ready
+                    : styles.unavailable
+                }`}
+              >
+                <div className={styles.avatar}>
+                  <FiUser size={24} />
                 </div>
-                <div className={styles.schedule}>
-                  <span className={styles.scheduleIcon}>⏰</span>
-                  <span>{doctor.schedule}</span>
-                </div>
-              </div>
-              <div className={styles.status}>
-                {doctor.isServing ? (
-                  <>
-                    <span
-                      className={styles.statusBadge + " " + styles.servingBadge}
-                    >
-                      Sedang Melayani
+                <div className={styles.doctorInfo}>
+                  <h2 className={styles.doctorName}>{doctor.name}</h2>
+                  <p className={styles.specialization}>
+                    {doctor.specialization}
+                  </p>
+                  <div className={styles.polyclinic}>
+                    <span className={styles.polyBadge}>
+                      {doctor.polyclinic.code}
                     </span>
-                    <p className={styles.patientName}>
-                      {doctor.currentPatient}
-                    </p>
-                  </>
-                ) : (
-                  <span
-                    className={styles.statusBadge + " " + styles.readyBadge}
-                  >
-                    Siap Melayani
-                  </span>
-                )}
-              </div>
-              <div className={styles.stats}>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>
-                    {doctor.completedToday}
-                  </span>
-                  <span className={styles.statLabel}>Pasien Selesai</span>
+                    <span>{doctor.polyclinic.name}</span>
+                  </div>
+                  <div className={styles.schedule}>
+                    <FiClock size={14} />
+                    <span>{doctor.schedule}</span>
+                  </div>
+                </div>
+                <div className={styles.status}>
+                  {doctor.isServing ? (
+                    <>
+                      <span
+                        className={
+                          styles.statusBadge + " " + styles.servingBadge
+                        }
+                      >
+                        Sedang Melayani
+                      </span>
+                      <p className={styles.patientName}>
+                        {doctor.currentPatient}
+                      </p>
+                    </>
+                  ) : available ? (
+                    <span
+                      className={styles.statusBadge + " " + styles.readyBadge}
+                    >
+                      <FiCheckCircle size={12} /> {statusText}
+                    </span>
+                  ) : (
+                    <span
+                      className={
+                        styles.statusBadge + " " + styles.unavailableBadge
+                      }
+                    >
+                      <FiXCircle size={12} /> {statusText}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.stats}>
+                  <div className={styles.stat}>
+                    <span className={styles.statValue}>
+                      {doctor.completedToday}
+                    </span>
+                    <span className={styles.statLabel}>Pasien Selesai</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
