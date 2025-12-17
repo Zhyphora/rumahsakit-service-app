@@ -1,8 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import styles from "./doctors.module.css";
-import { FiClock, FiUser, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import {
+  FiClock,
+  FiUser,
+  FiCheckCircle,
+  FiXCircle,
+  FiActivity,
+} from "react-icons/fi";
 
 interface Doctor {
   id: string;
@@ -92,7 +99,10 @@ export default function DoctorsPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Dokter Bertugas Hari Ini</h1>
+          <Link href="/" className={styles.brand}>
+            <FiActivity size={24} />
+            <span>Rumah Sakit</span>
+          </Link>
           <p className={styles.subtitle}>
             {currentTime?.toLocaleDateString("id-ID", {
               weekday: "long",

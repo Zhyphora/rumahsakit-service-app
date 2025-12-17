@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import styles from "./display.module.css";
-import { FiClock, FiUser } from "react-icons/fi";
+import { FiClock, FiUser, FiActivity } from "react-icons/fi";
 
 interface DoctorQueueData {
   doctor: {
