@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { StockService } from "../services/StockService";
+import { StockOpnameService } from "../services/StockOpnameService";
 import { AuthRequest } from "../middlewares/auth";
 
 export class StockController {
   private stockService = new StockService();
+  private stockOpnameService = new StockOpnameService();
 
   // Items
   getItems = async (req: Request, res: Response): Promise<void> => {
@@ -108,7 +110,7 @@ export class StockController {
     try {
       const { id } = req.params;
       const { itemId, actualQty, notes } = req.body;
-      const item = await this.stockService.addItemToOpname(
+      const item = await this.stockOpnameService.addItem(
         id,
         itemId,
         actualQty,
@@ -129,7 +131,7 @@ export class StockController {
         res.status(401).json({ message: "Not authenticated" });
         return;
       }
-      const opname = await this.stockService.completeStockOpname(
+      const opname = await this.stockOpnameService.completeOpname(
         req.params.id,
         req.user.id
       );
@@ -167,6 +169,59 @@ export class StockController {
         req.user.id
       );
       res.json(item);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  // New endpoints using StockOpnameService
+  correctStock = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+      }
+      const { itemId, adjustedQty, reason } = req.body;
+      const correction = await this.stockOpnameService.correctStock(
+        itemId,
+        adjustedQty,
+        reason,
+        req.user.id
+      );
+      res.json(correction);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  adjustIn = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+      }
+      const { itemId, qty, notes } = req.body;
+      const batch = await this.stockOpnameService.adjustIn(
+        itemId,
+        qty,
+        notes,
+        req.user.id
+      );
+      res.json(batch);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  adjustOut = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+      }
+      const { itemId, qty, notes } = req.body;
+      await this.stockOpnameService.adjustOut(itemId, qty, notes, req.user.id);
+      res.json({ message: "Stock adjusted out successfully" });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

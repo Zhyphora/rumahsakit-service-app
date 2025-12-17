@@ -42,5 +42,8 @@ router.post("/opname/:id/complete", stockController.completeStockOpname);
 // Stock Movements
 router.get("/movements", stockController.getStockMovements);
 router.post("/adjust", stockController.adjustStock);
+router.post("/correction", stockController.correctStock);
+router.post("/adjust/in", stockController.adjustIn);
+router.post("/adjust/out", stockController.adjustOut);
 
 export default router;
