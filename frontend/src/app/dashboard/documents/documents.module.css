@@ -206,3 +206,144 @@
   border-radius: 0.5rem;
   cursor: pointer;
 }
+
+/* Access Control Modal */
+.accessModalContent {
+  background: white;
+  border-radius: 1rem;
+  padding: 0;
+  width: 100%;
+  max-width: 550px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.accessModalHeader {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+}
+
+.accessModalHeader h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+.docName {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.accessSection {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.accessSection h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.noAccess {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.accessList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.accessItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.accessInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.criteriaType {
+  font-size: 1.25rem;
+}
+
+.criteriaValue {
+  font-weight: 500;
+  color: #374151;
+}
+
+.accessType {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.revokeBtn {
+  background: #fef2f2;
+  color: #dc2626;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.revokeBtn:hover {
+  background: #fee2e2;
+}
+
+.accessForm {
+  padding: 1.5rem 2rem;
+}
+
+.accessForm h3 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Access Settings Button */
+.settingsBtn {
+  background: #f3f4f6;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.settingsBtn:hover {
+  background: #e5e7eb;
+}
+
+.docActions {
+  display: flex;
+  gap: 0.5rem;
+}

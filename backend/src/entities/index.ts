@@ -11,6 +11,7 @@ export * from "./StockOpnameItem";
 export * from "./StockMovement";
 export * from "./Document";
 export * from "./DocumentAccess";
+export * from "./DocumentFolder";
 export * from "./DocumentAccessLog";
 export * from "./Attendance";
 export * from "./LeaveRequest";

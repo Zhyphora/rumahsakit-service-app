@@ -7,6 +7,81 @@ import { env } from "../config/env";
 export class DocumentController {
   private documentService = new DocumentService();
 
+  // ==================== FOLDER ENDPOINTS ====================
+
+  // Create folder
+  createFolder = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+      }
+
+      const folder = await this.documentService.createFolder({
+        name: req.body.name,
+        description: req.body.description,
+        parentFolderId: req.body.parentFolderId,
+        createdBy: req.user.id,
+      });
+
+      res.status(201).json(folder);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  // Get folders
+  getFolders = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { parentFolderId } = req.query;
+      const folders = await this.documentService.getFolders(
+        parentFolderId as string | undefined
+      );
+      res.json(folders);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  // Get folder by ID
+  getFolderById = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const folder = await this.documentService.getFolderById(req.params.id);
+      if (!folder) {
+        res.status(404).json({ message: "Folder not found" });
+        return;
+      }
+      res.json(folder);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  // Update folder
+  updateFolder = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const folder = await this.documentService.updateFolder(
+        req.params.id,
+        req.body
+      );
+      res.json(folder);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  // Delete folder
+  deleteFolder = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      await this.documentService.deleteFolder(req.params.id);
+      res.json({ message: "Folder deleted successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
+  // ==================== DOCUMENT ENDPOINTS ====================
+
   // Upload document
   uploadDocument = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -28,6 +103,7 @@ export class DocumentController {
         fileSize: req.file.size,
         category: req.body.category,
         patientId: req.body.patientId,
+        folderId: req.body.folderId,
         uploadedBy: req.user.id,
         isConfidential: req.body.isConfidential === "true",
       });
@@ -46,13 +122,14 @@ export class DocumentController {
         return;
       }
 
-      const { category, patientId } = req.query;
+      const { category, patientId, folderId } = req.query;
       const documents = await this.documentService.getDocuments(
         req.user.id,
         req.user.role,
         {
           category: category as string,
           patientId: patientId as string,
+          folderId: folderId as string,
         }
       );
 
@@ -175,7 +252,9 @@ export class DocumentController {
     }
   };
 
-  // Grant access
+  // ==================== ACCESS CONTROL ENDPOINTS ====================
+
+  // Grant access (enhanced - supports role, polyclinic, doctor, user)
   grantAccess = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       if (!req.user) {
@@ -184,8 +263,13 @@ export class DocumentController {
       }
 
       const access = await this.documentService.grantAccess({
-        documentId: req.params.id,
+        documentId: req.body.documentId || req.params.id,
+        folderId: req.body.folderId,
+        accessCriteriaType: req.body.accessCriteriaType || "user",
         userId: req.body.userId,
+        role: req.body.role,
+        polyclinicId: req.body.polyclinicId,
+        doctorId: req.body.doctorId,
         accessType: req.body.accessType,
         grantedBy: req.user.id,
         expiresAt: req.body.expiresAt
@@ -202,18 +286,20 @@ export class DocumentController {
   // Revoke access
   revokeAccess = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      await this.documentService.revokeAccess(req.params.id, req.params.userId);
+      await this.documentService.revokeAccess(req.params.accessId);
       res.json({ message: "Access revoked successfully" });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   };
 
-  // Get document access list
+  // Get document/folder access list
   getDocumentAccess = async (req: Request, res: Response): Promise<void> => {
     try {
+      const { documentId, folderId } = req.query;
       const access = await this.documentService.getDocumentAccess(
-        req.params.id
+        documentId as string,
+        folderId as string
       );
       res.json(access);
     } catch (error: any) {

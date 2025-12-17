@@ -104,6 +104,10 @@ export default function DoctorsPage() {
                   </span>
                   <span>{doctor.polyclinic.name}</span>
                 </div>
+                <div className={styles.schedule}>
+                  <span className={styles.scheduleIcon}>⏰</span>
+                  <span>{doctor.schedule}</span>
+                </div>
               </div>
               <div className={styles.status}>
                 {doctor.isServing ? (

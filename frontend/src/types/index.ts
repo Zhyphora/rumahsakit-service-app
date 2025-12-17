@@ -126,9 +126,49 @@ export interface Document {
   category?: string;
   patientId?: string;
   patient?: Patient;
+  folderId?: string;
+  folder?: DocumentFolder;
   uploadedBy: string;
   uploader: User;
   isConfidential: boolean;
+  createdAt: string;
+  accessList?: DocumentAccess[];
+}
+
+export interface DocumentFolder {
+  id: string;
+  name: string;
+  description?: string;
+  parentFolderId?: string;
+  parentFolder?: DocumentFolder;
+  children?: DocumentFolder[];
+  documents?: Document[];
+  createdBy: string;
+  creator?: User;
+  createdAt: string;
+}
+
+export type AccessCriteriaType = "user" | "role" | "polyclinic" | "doctor";
+export type AccessType = "view" | "edit" | "delete" | "full";
+
+export interface DocumentAccess {
+  id: string;
+  documentId?: string;
+  document?: Document;
+  folderId?: string;
+  folder?: DocumentFolder;
+  accessCriteriaType: AccessCriteriaType;
+  userId?: string;
+  user?: User;
+  role?: string;
+  polyclinicId?: string;
+  polyclinic?: Polyclinic;
+  doctorId?: string;
+  doctor?: Doctor;
+  accessType: AccessType;
+  grantedBy: string;
+  grantor?: User;
+  expiresAt?: string;
   createdAt: string;
 }
 

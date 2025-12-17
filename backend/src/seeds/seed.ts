@@ -12,6 +12,47 @@ async function seed() {
     await AppDataSource.initialize();
     console.log("Database connected");
 
+    // Truncate all tables before seeding
+    console.log("Truncating existing data...");
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    // Disable foreign key checks temporarily and truncate tables
+    // Order matters: child tables first, then parent tables
+    const tablesToTruncate = [
+      "prescription_items",
+      "prescriptions",
+      "document_access_logs",
+      "document_access",
+      "documents",
+      "queue_numbers",
+      "queue_counters",
+      "stock_opname_items",
+      "stock_opnames",
+      "stock_movements",
+      "leave_requests",
+      "attendances",
+      "doctors",
+      "staff",
+      "patients",
+      "items",
+      "polyclinics",
+      "users",
+    ];
+
+    for (const table of tablesToTruncate) {
+      try {
+        await queryRunner.query(`TRUNCATE TABLE "${table}" CASCADE`);
+        console.log(`  ✓ Truncated ${table}`);
+      } catch (error: any) {
+        // Table might not exist yet, skip
+        console.log(`  - Skipped ${table} (may not exist)`);
+      }
+    }
+
+    await queryRunner.release();
+    console.log("Truncate completed.\n");
+
     // Create admin user
     const userRepository = AppDataSource.getRepository(User);
     const doctorRepository = AppDataSource.getRepository(Doctor);
@@ -66,33 +107,101 @@ async function seed() {
     }
     console.log("Polyclinics created");
 
-    // Create Doctors
+    // Create Doctors (2 per polyclinic)
     const doctors = [
+      // Poli Umum (index 0)
       {
         name: "Dr. Budi Santoso",
         email: "budi@rumahsakit.com",
         specialization: "Dokter Umum",
         polyclinicIndex: 0,
+        scheduleType: "pagi", // 08:00 - 14:00
       },
+      {
+        name: "Dr. Ratna Sari",
+        email: "ratna@rumahsakit.com",
+        specialization: "Dokter Umum",
+        polyclinicIndex: 0,
+        scheduleType: "siang", // 13:00 - 20:00
+      },
+      // Poli Anak (index 1)
       {
         name: "Dr. Siti Rahayu",
         email: "siti@rumahsakit.com",
         specialization: "Dokter Anak",
         polyclinicIndex: 1,
+        scheduleType: "pagi",
       },
+      {
+        name: "Dr. Hendra Wijaya",
+        email: "hendra@rumahsakit.com",
+        specialization: "Dokter Spesialis Anak",
+        polyclinicIndex: 1,
+        scheduleType: "siang",
+      },
+      // Poli Gigi (index 2)
       {
         name: "Dr. Ahmad Prasetyo",
         email: "ahmad@rumahsakit.com",
         specialization: "Dokter Gigi",
         polyclinicIndex: 2,
+        scheduleType: "pagi",
       },
+      {
+        name: "Dr. Lisa Permata",
+        email: "lisa@rumahsakit.com",
+        specialization: "Dokter Gigi Spesialis",
+        polyclinicIndex: 2,
+        scheduleType: "siang",
+      },
+      // Poli Mata (index 3)
       {
         name: "Dr. Maria Dewi",
         email: "maria@rumahsakit.com",
         specialization: "Dokter Mata",
         polyclinicIndex: 3,
+        scheduleType: "pagi",
+      },
+      {
+        name: "Dr. Agus Setiawan",
+        email: "agus.dr@rumahsakit.com",
+        specialization: "Dokter Spesialis Mata",
+        polyclinicIndex: 3,
+        scheduleType: "siang",
+      },
+      // Poli THT (index 4)
+      {
+        name: "Dr. Yulia Andini",
+        email: "yulia@rumahsakit.com",
+        specialization: "Dokter THT",
+        polyclinicIndex: 4,
+        scheduleType: "pagi",
+      },
+      {
+        name: "Dr. Rizky Pratama",
+        email: "rizky@rumahsakit.com",
+        specialization: "Dokter Spesialis THT",
+        polyclinicIndex: 4,
+        scheduleType: "siang",
       },
     ];
+
+    const schedules = {
+      pagi: {
+        monday: { start: "08:00", end: "14:00" },
+        tuesday: { start: "08:00", end: "14:00" },
+        wednesday: { start: "08:00", end: "14:00" },
+        thursday: { start: "08:00", end: "14:00" },
+        friday: { start: "08:00", end: "12:00" },
+      },
+      siang: {
+        monday: { start: "13:00", end: "20:00" },
+        tuesday: { start: "13:00", end: "20:00" },
+        wednesday: { start: "13:00", end: "20:00" },
+        thursday: { start: "13:00", end: "20:00" },
+        friday: { start: "13:00", end: "17:00" },
+      },
+    };
 
     for (const doc of doctors) {
       const user = userRepository.create({
@@ -109,17 +218,11 @@ async function seed() {
         specialization: doc.specialization,
         polyclinicId: createdPolyclinics[doc.polyclinicIndex].id,
         licenseNumber: "STR-" + Math.random().toString().substring(2, 10),
-        schedule: {
-          monday: { start: "08:00", end: "16:00" },
-          tuesday: { start: "08:00", end: "16:00" },
-          wednesday: { start: "08:00", end: "16:00" },
-          thursday: { start: "08:00", end: "16:00" },
-          friday: { start: "08:00", end: "12:00" },
-        },
+        schedule: schedules[doc.scheduleType as keyof typeof schedules],
       });
       await doctorRepository.save(doctor);
     }
-    console.log("Doctors created");
+    console.log("Doctors created (10 total)");
 
     // Create Staff
     const staffMembers = [

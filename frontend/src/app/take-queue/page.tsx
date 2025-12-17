@@ -6,6 +6,20 @@ import styles from "./take-queue.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
+interface AvailableDoctor {
+  id: string;
+  name: string;
+  specialization: string;
+  schedule: string;
+  completedToday: number;
+  isServing: boolean;
+  polyclinic: {
+    id: string;
+    name: string;
+    code: string;
+  };
+}
+
 export default function TakeQueuePage() {
   const [polyclinics, setPolyclinics] = useState<Polyclinic[]>([]);
   const [selectedPoly, setSelectedPoly] = useState<string>("");
@@ -14,13 +28,26 @@ export default function TakeQueuePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [queueResult, setQueueResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const [doctors, setDoctors] = useState<AvailableDoctor[]>([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/queue/polyclinics`)
       .then((res) => res.json())
       .then(setPolyclinics)
       .catch(console.error);
+
+    // Load available doctors
+    fetch(`${API_URL}/doctors/available`)
+      .then((res) => res.json())
+      .then(setDoctors)
+      .catch(console.error);
   }, []);
+
+  // Get doctors for selected polyclinic
+  const selectedPolyDoctors = doctors.filter(
+    (doc) => doc.polyclinic?.id === selectedPoly
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +151,46 @@ export default function TakeQueuePage() {
               ))}
             </div>
           </div>
+
+          {/* Show doctors for selected polyclinic */}
+          {selectedPoly && (
+            <div className={styles.doctorSection}>
+              <label>Dokter Bertugas</label>
+              {selectedPolyDoctors.length > 0 ? (
+                <div className={styles.doctorList}>
+                  {selectedPolyDoctors.map((doctor) => (
+                    <div key={doctor.id} className={styles.doctorCard}>
+                      <div className={styles.doctorAvatar}>
+                        {doctor.name.charAt(0)}
+                      </div>
+                      <div className={styles.doctorInfo}>
+                        <span className={styles.doctorName}>{doctor.name}</span>
+                        <span className={styles.doctorSpec}>
+                          {doctor.specialization}
+                        </span>
+                        <span className={styles.doctorSchedule}>
+                          ⏰ {doctor.schedule}
+                        </span>
+                      </div>
+                      <div className={styles.doctorStatus}>
+                        {doctor.isServing ? (
+                          <span className={styles.statusServing}>
+                            Sedang Melayani
+                          </span>
+                        ) : (
+                          <span className={styles.statusReady}>Tersedia</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.noDoctor}>
+                  Tidak ada dokter yang bertugas hari ini untuk poliklinik ini
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={styles.formGroup}>
             <label htmlFor="patientName">Nama Lengkap</label>

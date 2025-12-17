@@ -11,6 +11,7 @@ import {
 import { User } from "./User";
 import { Patient } from "./Patient";
 import { DocumentAccess } from "./DocumentAccess";
+import { DocumentFolder } from "./DocumentFolder";
 
 @Entity("documents")
 export class Document {
@@ -51,6 +52,15 @@ export class Document {
 
   @Column({ name: "is_confidential", default: false })
   isConfidential!: boolean;
+
+  @Column({ name: "folder_id", nullable: true })
+  folderId?: string;
+
+  @ManyToOne(() => DocumentFolder, (folder) => folder.documents, {
+    nullable: true,
+  })
+  @JoinColumn({ name: "folder_id" })
+  folder?: DocumentFolder;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
