@@ -8,30 +8,38 @@ import {
   broadcastQueueCalled,
 } from "../config/websocket";
 
+import { User } from "../entities/User";
+import { Role } from "../entities/Role";
+import * as bcrypt from "bcryptjs";
+
 export class QueueService {
   private queueNumberRepository = AppDataSource.getRepository(QueueNumber);
   private queueCounterRepository = AppDataSource.getRepository(QueueCounter);
   private patientRepository = AppDataSource.getRepository(Patient);
   private polyclinicRepository = AppDataSource.getRepository(Polyclinic);
+  private userRepository = AppDataSource.getRepository(User);
+  private roleRepository = AppDataSource.getRepository(Role);
 
-  // Get or create counter for today
+  // Get or create counter for specific date
   private async getOrCreateCounter(
-    polyclinicId: string
+    polyclinicId: string,
+    date: Date
   ): Promise<QueueCounter> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Normalize date to start of day
+    const counterDate = new Date(date);
+    counterDate.setHours(0, 0, 0, 0);
 
     let counter = await this.queueCounterRepository.findOne({
       where: {
         polyclinicId,
-        counterDate: today,
+        counterDate,
       },
     });
 
     if (!counter) {
       counter = this.queueCounterRepository.create({
         polyclinicId,
-        counterDate: today,
+        counterDate,
         lastNumber: 0,
       });
       await this.queueCounterRepository.save(counter);
@@ -48,6 +56,8 @@ export class QueueService {
     patientPhone?: string;
     doctorId?: string;
     bpjsNumber?: string;
+    queueDate?: string; // Optional future date YYYY-MM-DD
+    // password removed
   }) {
     // Find or create patient
     let patient: Patient | null = null;
@@ -56,8 +66,69 @@ export class QueueService {
       patient = await this.patientRepository.findOne({
         where: { id: data.patientId },
       });
+    } else if (data.bpjsNumber && !data.patientName) {
+      // Existing patient lookup by BPJS (Only if name not provided, meaning it's "Pasien Lama" tab intent)
+      // Actually frontend sends name for new patients. unique distinction: name/phone is present for new.
+      // But verify logic:
+      patient = await this.patientRepository.findOne({
+        where: { bpjsNumber: data.bpjsNumber },
+      });
+      if (!patient) {
+        throw new Error(
+          "Data pasien tidak ditemukan. Silakan daftar sebagai pasien baru."
+        );
+      }
+    } else if (data.patientName && data.patientPhone) {
+      // Register New Patient (Always create user now if not exists)
+      const generatedEmail = `${data.patientPhone}@mediku.com`;
+
+      // Check if user exists
+      let user = await this.userRepository.findOne({
+        where: { email: generatedEmail },
+      });
+
+      if (!user) {
+        // Create new user with Phone as password (default)
+        const patientRole = await this.roleRepository.findOne({
+          where: { name: "patient" },
+        });
+        if (!patientRole) throw new Error("Role patient not found");
+
+        const hashedPassword = await bcrypt.hash(data.patientPhone, 10);
+
+        user = this.userRepository.create({
+          name: data.patientName,
+          email: generatedEmail,
+          password: hashedPassword,
+          role: patientRole,
+          phone: data.patientPhone,
+        });
+
+        await this.userRepository.save(user);
+      }
+
+      // Check if patient record exists for this user?
+      // Or just create new patient record linked to user?
+      // If we found the user, they might already have a patient record.
+      // But "Pasien Baru" implies we want to create one.
+      // Let's check matching patient by user_id
+      patient = await this.patientRepository.findOne({
+        where: { userId: user.id },
+      });
+
+      if (!patient) {
+        const mrn = "REG-" + Date.now().toString();
+        patient = this.patientRepository.create({
+          user: user,
+          name: data.patientName,
+          medicalRecordNumber: mrn,
+          phone: data.patientPhone,
+          bpjsNumber: data.bpjsNumber,
+        });
+        await this.patientRepository.save(patient);
+      }
     } else if (data.patientName) {
-      // Create walk-in patient
+      // Fallback walk-in without phone? Rare case given frontend validation.
       const mrn = "WI-" + Date.now().toString();
       patient = this.patientRepository.create({
         name: data.patientName,
@@ -69,22 +140,20 @@ export class QueueService {
     }
 
     if (!patient) {
-      throw new Error("Patient information required");
+      throw new Error("Informasi pasien tidak lengkap.");
     }
 
-    // Update BPJS if provided and patient exists
-    if (data.bpjsNumber && patient && !patient.bpjsNumber) {
-      patient.bpjsNumber = data.bpjsNumber;
-      await this.patientRepository.save(patient);
-    }
+    // specific date or today
+    const targetDate = data.queueDate ? new Date(data.queueDate) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
 
     // Get counter and increment
-    const counter = await this.getOrCreateCounter(data.polyclinicId);
+    const counter = await this.getOrCreateCounter(
+      data.polyclinicId,
+      targetDate
+    );
     counter.lastNumber += 1;
     await this.queueCounterRepository.save(counter);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     // Create queue number with optional doctor assignment
     const queueNumber = this.queueNumberRepository.create({
@@ -92,7 +161,7 @@ export class QueueService {
       patientId: patient.id,
       doctorId: data.doctorId || undefined,
       queueNumber: counter.lastNumber,
-      queueDate: today,
+      queueDate: targetDate,
       status: "waiting",
       checkInTime: new Date(),
     });
@@ -105,8 +174,12 @@ export class QueueService {
       relations: ["polyclinic", "patient", "doctor", "doctor.user"],
     });
 
-    // Broadcast update
-    await this.broadcastQueueState(data.polyclinicId);
+    // Broadcast update only if it's for today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (targetDate.getTime() === today.getTime()) {
+      await this.broadcastQueueState(data.polyclinicId);
+    }
 
     return savedQueue;
   }
@@ -295,5 +368,43 @@ export class QueueService {
       where: { isActive: true },
       order: { name: "ASC" },
     });
+  }
+
+  // Get my queue (for patient)
+  async getMyQueue(userId: string) {
+    // Find patient by userId
+    const patient = await this.patientRepository.findOne({
+      where: { userId },
+    });
+
+    if (!patient) {
+      return [];
+    }
+
+    // Get today's date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find queues for this patient (today and future)
+    const queues = await this.queueNumberRepository.find({
+      where: {
+        patientId: patient.id,
+      },
+      relations: ["polyclinic", "doctor", "doctor.user"],
+      order: { queueDate: "DESC", queueNumber: "ASC" },
+    });
+
+    // Filter to show only today and future queues that are not completed
+    const activeQueues = queues.filter((q) => {
+      const queueDate = new Date(q.queueDate);
+      queueDate.setHours(0, 0, 0, 0);
+      return (
+        queueDate >= today &&
+        q.status !== "completed" &&
+        q.status !== "cancelled"
+      );
+    });
+
+    return activeQueues;
   }
 }

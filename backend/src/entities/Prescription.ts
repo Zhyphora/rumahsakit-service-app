@@ -13,6 +13,7 @@ import { Doctor } from "./Doctor";
 import { QueueNumber } from "./QueueNumber";
 import { User } from "./User";
 import { PrescriptionItem } from "./PrescriptionItem";
+import { MedicalRecord } from "./MedicalRecord";
 
 export type PrescriptionStatus =
   | "pending"
@@ -38,6 +39,16 @@ export class Prescription {
   @ManyToOne(() => Patient)
   @JoinColumn({ name: "patient_id" })
   patient!: Patient;
+
+  @Column({ name: "medical_record_id", nullable: true })
+  medicalRecordId?: string;
+
+  @ManyToOne(
+    () => MedicalRecord,
+    (medicalRecord) => medicalRecord.prescriptions
+  )
+  @JoinColumn({ name: "medical_record_id" })
+  medicalRecord?: MedicalRecord;
 
   @Column({ name: "doctor_id" })
   doctorId!: string;

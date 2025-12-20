@@ -3,19 +3,32 @@
 import { useState, useEffect } from "react";
 import { Polyclinic } from "@/types";
 import styles from "./take-queue.module.css";
+import Navbar from "@/components/Navbar";
 import {
   FiClock,
   FiUser,
-  FiAlertCircle,
+  FiActivity,
   FiCheckCircle,
-  FiMonitor,
+  FiAlertCircle,
+  FiPlus,
+  FiCalendar,
 } from "react-icons/fi";
+import {
+  FaTooth,
+  FaStethoscope,
+  FaChild,
+  FaEye,
+  FaHeadSideCough,
+} from "react-icons/fa";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 interface AvailableDoctor {
   id: string;
   name: string;
+  user?: {
+    name: string;
+  };
   specialization: string;
   schedule: any;
   completedToday: number;
@@ -27,39 +40,30 @@ interface AvailableDoctor {
   };
 }
 
-// Helper to check if doctor is available now based on schedule
-const isDoctorAvailable = (
-  schedule: any
-): { available: boolean; scheduleText: string } => {
-  if (!schedule) return { available: true, scheduleText: "Tersedia" };
-
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinutes = now.getMinutes();
-  const currentTime = currentHour * 60 + currentMinutes;
-
-  // If schedule is a string like "08:00 - 14:00" or "13:00 - 20:00"
-  if (typeof schedule === "string") {
-    const match = schedule.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-    if (match) {
-      const startTime = parseInt(match[1]) * 60 + parseInt(match[2]);
-      const endTime = parseInt(match[3]) * 60 + parseInt(match[4]);
-
-      if (currentTime >= startTime && currentTime <= endTime) {
-        return { available: true, scheduleText: schedule };
-      } else if (currentTime < startTime) {
-        return {
-          available: true,
-          scheduleText: `Mulai ${match[1]}:${match[2]}`,
-        };
-      } else {
-        return { available: false, scheduleText: `Sudah tutup (${schedule})` };
-      }
-    }
-    return { available: true, scheduleText: schedule };
+// Icon mapper for polyclinics based on code or name
+const getPolyIcon = (code: string) => {
+  switch (code) {
+    case "PA":
+      return <FaChild />;
+    case "PG":
+      return <FaTooth />;
+    case "PM":
+      return <FaEye />;
+    case "PT":
+      return <FaHeadSideCough />;
+    default:
+      return <FaStethoscope />;
   }
+};
 
-  const days = [
+// Helper to check if doctor is available on specific date
+const isDoctorAvailableOnDate = (
+  schedule: any,
+  date: Date
+): { available: boolean; text: string } => {
+  if (!schedule) return { available: true, text: "Tersedia" };
+
+  const dayNames = [
     "sunday",
     "monday",
     "tuesday",
@@ -68,39 +72,51 @@ const isDoctorAvailable = (
     "friday",
     "saturday",
   ];
-  const today = days[now.getDay()];
+  const dayName = dayNames[date.getDay()];
+  const daySchedule = schedule[dayName];
 
-  const todaySchedule = schedule[today];
-  if (!todaySchedule)
-    return { available: false, scheduleText: "Tidak bertugas hari ini" };
-
-  const [startHour, startMin] = todaySchedule.start.split(":").map(Number);
-  const [endHour, endMin] = todaySchedule.end.split(":").map(Number);
-  const startTime = startHour * 60 + startMin;
-  const endTime = endHour * 60 + endMin;
-
-  const scheduleText = `${todaySchedule.start} - ${todaySchedule.end}`;
-
-  if (currentTime >= startTime && currentTime <= endTime) {
-    return { available: true, scheduleText };
-  } else if (currentTime < startTime) {
-    return { available: true, scheduleText: `Mulai ${todaySchedule.start}` };
-  } else {
-    return { available: false, scheduleText: `Sudah tutup (${scheduleText})` };
+  if (!daySchedule) {
+    return { available: false, text: "Tidak Praktik" };
   }
+
+  return {
+    available: true,
+    text: `${daySchedule.start} - ${daySchedule.end}`,
+  };
 };
 
 export default function TakeQueuePage() {
   const [polyclinics, setPolyclinics] = useState<Polyclinic[]>([]);
   const [selectedPoly, setSelectedPoly] = useState<string>("");
   const [selectedDoctor, setSelectedDoctor] = useState<string>("");
+
+  // Tab State
+  const [patientType, setPatientType] = useState<"existing" | "new">(
+    "existing"
+  );
+
+  // Form State
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [bpjsNumber, setBpjsNumber] = useState("");
+
   const [isLoading, setIsLoading] = useState(false);
   const [queueResult, setQueueResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [doctors, setDoctors] = useState<AvailableDoctor[]>([]);
+
+  // State for date
+  const [customQueueDate, setCustomQueueDate] = useState<Date>(new Date());
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = new Date(e.target.value);
+    setCustomQueueDate(date);
+    setSelectedDoctor("");
+  };
+
+  const handleSelectDoctor = (doctorId: string) => {
+    setSelectedDoctor(doctorId);
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/queue/polyclinics`)
@@ -108,34 +124,25 @@ export default function TakeQueuePage() {
       .then(setPolyclinics)
       .catch(console.error);
 
-    fetch(`${API_URL}/doctors/available`)
+    // Fetch ALL doctors to allow future booking
+    fetch(`${API_URL}/doctors`)
       .then((res) => res.json())
       .then(setDoctors)
       .catch(console.error);
   }, []);
 
-  // Get doctors for selected polyclinic with availability check
+  // Filter doctors based on Poly AND Day of Week of selected date
   const selectedPolyDoctors = doctors
     .filter((doc) => doc.polyclinic?.id === selectedPoly)
     .map((doc) => ({
       ...doc,
-      ...isDoctorAvailable(doc.schedule),
-    }));
-
-  // Get available doctors count
-  const availableDoctorsCount = selectedPolyDoctors.filter(
-    (d) => d.available
-  ).length;
+      availability: isDoctorAvailableOnDate(doc.schedule, customQueueDate),
+    }))
+    .filter((doc) => doc.availability.available); // Only show doctors available on that day? Or show all with status? User asked to show list if available.
 
   const handleSelectPoly = (polyId: string) => {
     setSelectedPoly(polyId);
-    setSelectedDoctor(""); // Reset doctor when changing polyclinic
-  };
-
-  const handleSelectDoctor = (doctorId: string, available: boolean) => {
-    if (available) {
-      setSelectedDoctor(doctorId);
-    }
+    setSelectedDoctor("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,15 +151,19 @@ export default function TakeQueuePage() {
     setIsLoading(true);
 
     try {
+      const dateStr = customQueueDate.toISOString().split("T")[0];
+
       const response = await fetch(`${API_URL}/queue/take`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           polyclinicId: selectedPoly,
           doctorId: selectedDoctor || undefined,
-          patientName,
-          patientPhone,
+          patientName: patientType === "new" ? patientName : undefined,
+          patientPhone: patientType === "new" ? patientPhone : undefined,
           bpjsNumber: bpjsNumber || undefined,
+          // No password sent, backend will handle defaults
+          queueDate: dateStr,
         }),
       });
 
@@ -163,6 +174,7 @@ export default function TakeQueuePage() {
 
       const result = await response.json();
       setQueueResult(result);
+      // Reset form
       setPatientName("");
       setPatientPhone("");
       setBpjsNumber("");
@@ -179,209 +191,309 @@ export default function TakeQueuePage() {
     setSelectedDoctor("");
   };
 
-  // Estimate wait time based on queue position (15 min per patient)
-  const estimatedWaitMinutes = queueResult
-    ? Math.max(0, (queueResult.queueNumber - 1) * 15)
-    : 0;
-
   if (queueResult) {
     return (
       <div className={styles.container}>
-        <div className={styles.ticket}>
-          <div className={styles.ticketHeader}>
-            <h1>Rumah Sakit</h1>
-            <p>Nomor Antrian Anda</p>
-          </div>
-          <div className={styles.ticketNumber}>
-            {queueResult.polyclinic?.code}-
-            {String(queueResult.queueNumber).padStart(3, "0")}
-          </div>
-          <div className={styles.ticketInfo}>
-            <p>
-              <strong>Poliklinik:</strong> {queueResult.polyclinic?.name}
-            </p>
-            <p>
-              <strong>Nama:</strong> {queueResult.patient?.name}
-            </p>
-            {queueResult.doctor && (
-              <p>
-                <strong>Dokter:</strong>{" "}
-                {queueResult.doctor?.user?.name || queueResult.doctor?.name}
-              </p>
-            )}
-            <p>
-              <strong>Tanggal:</strong> {new Date().toLocaleDateString("id-ID")}
-            </p>
-            <p>
-              <strong>Waktu:</strong> {new Date().toLocaleTimeString("id-ID")}
-            </p>
-          </div>
+        <div className={styles.ticketContainer}>
+          <div className={styles.ticket}>
+            <div className={styles.ticketHeader}>
+              <div className={styles.brandName}>
+                <FiActivity /> MediKu
+              </div>
+              <div className={styles.ticketLabel}>Nomor Antrian Anda</div>
+            </div>
 
-          {/* Monitor Guidance */}
-          <div className={styles.monitorGuidance}>
-            <FiMonitor size={32} />
-            <div className={styles.monitorText}>
-              <strong>Perhatikan Monitor</strong>
-              <span>
-                Silakan pantau layar monitor untuk mengetahui kapan nomor
-                antrian Anda dipanggil
-              </span>
-              {estimatedWaitMinutes > 0 && (
-                <span className={styles.estimatedTime}>
-                  <FiClock size={14} /> Perkiraan tunggu: ~
-                  {estimatedWaitMinutes} menit
+            <div className={styles.ticketNumberWrapper}>
+              <div className={styles.queueNumber}>
+                {queueResult.polyclinic?.code}-
+                {String(queueResult.queueNumber).padStart(3, "0")}
+              </div>
+              <div className={styles.polyNameDisplay}>
+                {queueResult.polyclinic?.name}
+              </div>
+            </div>
+
+            <div className={styles.ticketInfo}>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Nama Pasien</span>
+                <span className={styles.value}>
+                  {queueResult.patient?.name}
                 </span>
+              </div>
+              {queueResult.doctor && (
+                <div className={styles.infoRow}>
+                  <span className={styles.label}>Dokter</span>
+                  <span className={styles.value}>
+                    {queueResult.doctor?.user?.name || queueResult.doctor?.name}
+                  </span>
+                </div>
               )}
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Waktu Daftar</span>
+                <span className={styles.value}>
+                  {new Date().toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Tanggal Periksa</span>
+                <span className={styles.value}>
+                  {new Date(
+                    queueResult.queueDate || new Date()
+                  ).toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className={styles.infoRow} style={{ border: "none" }}>
+                <span className={styles.label}>Estimasi Tunggu</span>
+                <span className={styles.value}>
+                  ~{Math.max(0, (queueResult.queueNumber - 1) * 15)} Menit
+                </span>
+              </div>
+
+              <button onClick={handleNewQueue} className={styles.newQueueBtn}>
+                <FiPlus /> Ambil Antrian Lain
+              </button>
             </div>
           </div>
-
-          <div className={styles.ticketNote}>
-            Harap datang tepat waktu dan tunjukkan nomor antrian ini
-          </div>
-          <button onClick={handleNewQueue} className={styles.newBtn}>
-            Ambil Antrian Baru
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <h1>Ambil Nomor Antrian</h1>
-          <p>Silakan isi data berikut untuk mengambil nomor antrian</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {error && <div className={styles.error}>{error}</div>}
-
-          <div className={styles.formGroup}>
-            <label>Pilih Poliklinik</label>
-            <div className={styles.polyGrid}>
-              {polyclinics.map((poly) => (
-                <button
-                  key={poly.id}
-                  type="button"
-                  className={`${styles.polyBtn} ${
-                    selectedPoly === poly.id ? styles.selected : ""
-                  }`}
-                  onClick={() => handleSelectPoly(poly.id)}
-                >
-                  <span className={styles.polyCode}>{poly.code}</span>
-                  <span className={styles.polyName}>{poly.name}</span>
-                </button>
-              ))}
+    <>
+      <Navbar />
+      <div style={{ paddingTop: "80px", paddingBottom: "40px" }}>
+        <div className={styles.container}>
+          <div className={styles.card}>
+            <div className={styles.header}>
+              <h1>Ambil Antrian</h1>
+              <p>Pilih jadwal dan layanan medis</p>
             </div>
-          </div>
 
-          {/* Doctor Selection */}
-          {selectedPoly && (
-            <div className={styles.doctorSection}>
-              <label>
-                Pilih Dokter
-                {availableDoctorsCount > 0 && (
-                  <span className={styles.availableCount}>
-                    ({availableDoctorsCount} tersedia)
-                  </span>
-                )}
-              </label>
-              {selectedPolyDoctors.length > 0 ? (
-                <div className={styles.doctorList}>
-                  {selectedPolyDoctors.map((doctor) => (
+            <form onSubmit={handleSubmit} className={styles.form}>
+              {error && <div className={styles.error}>{error}</div>}
+
+              {/* Date Selection - Native Picker */}
+              <div className={styles.formGroup}>
+                <label>
+                  <FiCalendar /> Pilih Tanggal Kunjungan
+                </label>
+                <input
+                  type="date"
+                  className={styles.input}
+                  value={customQueueDate.toISOString().split("T")[0]}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={handleDateChange}
+                  required
+                />
+                <div
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#64748b",
+                    marginTop: "4px",
+                  }}
+                >
+                  Terjadwal untuk:{" "}
+                  <strong>
+                    {customQueueDate?.toLocaleDateString("id-ID", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Polyclinic Grid */}
+              <div className={styles.formGroup}>
+                <label>Pilih Poliklinik</label>
+                <div className={styles.polyGrid}>
+                  {polyclinics.map((poly) => (
                     <div
-                      key={doctor.id}
-                      className={`${styles.doctorCard} ${
-                        selectedDoctor === doctor.id
-                          ? styles.doctorSelected
-                          : ""
-                      } ${!doctor.available ? styles.doctorUnavailable : ""}`}
-                      onClick={() =>
-                        handleSelectDoctor(doctor.id, doctor.available)
-                      }
+                      key={poly.id}
+                      className={`${styles.polyBtn} ${
+                        selectedPoly === poly.id ? styles.selected : ""
+                      }`}
+                      onClick={() => handleSelectPoly(poly.id)}
                     >
-                      <div className={styles.doctorAvatar}>
-                        <FiUser size={20} />
+                      <div className={styles.polyIconWrapper}>
+                        {getPolyIcon(poly.code)}
                       </div>
-                      <div className={styles.doctorInfo}>
-                        <span className={styles.doctorName}>{doctor.name}</span>
-                        <span className={styles.doctorSpec}>
-                          {doctor.specialization}
-                        </span>
-                        <span className={styles.doctorSchedule}>
-                          <FiClock size={12} /> {doctor.scheduleText}
-                        </span>
-                      </div>
-                      <div className={styles.doctorStatus}>
-                        {doctor.available ? (
-                          <span className={styles.statusReady}>
-                            <FiCheckCircle size={14} /> Tersedia
-                          </span>
-                        ) : (
-                          <span className={styles.statusUnavailable}>
-                            <FiAlertCircle size={14} /> Tidak Tersedia
-                          </span>
-                        )}
-                      </div>
+                      <span className={styles.polyName}>{poly.name}</span>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className={styles.noDoctor}>
-                  Tidak ada dokter untuk poliklinik ini
+              </div>
+
+              {/* Doctor Selection */}
+              {selectedPoly && (
+                <div className={styles.formGroup}>
+                  <label>
+                    Pilih Dokter
+                    <span className={styles.subLabel}>
+                      ({selectedPolyDoctors.length} Dokter Tersedia pada{" "}
+                      {customQueueDate.toLocaleDateString("id-ID", {
+                        weekday: "long",
+                      })}
+                      )
+                    </span>
+                  </label>
+
+                  <div className={styles.doctorList}>
+                    {selectedPolyDoctors.length > 0 ? (
+                      selectedPolyDoctors.map((doctor) => (
+                        <div
+                          key={doctor.id}
+                          className={`${styles.doctorCard} ${
+                            selectedDoctor === doctor.id
+                              ? styles.doctorSelected
+                              : ""
+                          }`}
+                          onClick={() => handleSelectDoctor(doctor.id)}
+                        >
+                          <div className={styles.doctorAvatar}>
+                            <FiUser />
+                          </div>
+                          <div className={styles.doctorInfo}>
+                            <span className={styles.doctorName}>
+                              {doctor.user?.name || doctor.name}
+                            </span>
+                            <span className={styles.doctorSpec}>
+                              {doctor.specialization}
+                            </span>
+                            <div className={styles.scheduleBadge}>
+                              <FiClock /> {doctor.availability.text}
+                            </div>
+                          </div>
+                          <div className={styles.checkIcon}>
+                            {selectedDoctor === doctor.id && <FiCheckCircle />}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={styles.emptyState}>
+                        Dokter tidak jadwal praktik pada hari ini.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-            </div>
-          )}
 
-          <div className={styles.formGroup}>
-            <label htmlFor="patientName">Nama Lengkap *</label>
-            <input
-              id="patientName"
-              type="text"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              className={styles.input}
-              placeholder="Masukkan nama lengkap"
-              required
-            />
+              {/* Patient Form Tabs */}
+              <div className={styles.formGroup}>
+                <label>
+                  <FiUser /> Data Pasien
+                </label>
+                <div className={styles.tabs}>
+                  <button
+                    type="button"
+                    className={`${styles.tab} ${
+                      patientType === "existing" ? styles.activeTab : ""
+                    }`}
+                    onClick={() => setPatientType("existing")}
+                  >
+                    Pasien Lama (BPJS)
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tab} ${
+                      patientType === "new" ? styles.activeTab : ""
+                    }`}
+                    onClick={() => setPatientType("new")}
+                  >
+                    Pasien Baru
+                  </button>
+                </div>
+
+                <div className={styles.tabContent}>
+                  {patientType === "existing" ? (
+                    <div className={styles.inputGroup}>
+                      <label>
+                        Nomor BPJS <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={bpjsNumber}
+                        onChange={(e) => setBpjsNumber(e.target.value)}
+                        className={styles.input}
+                        placeholder="Masukkan Nomor BPJS"
+                        required
+                      />
+                      <span className={styles.hint}>
+                        Pastikan nomor BPJS sudah terdaftar di sistem.
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.inputGroup}>
+                        <label>
+                          Nama Lengkap{" "}
+                          <span className={styles.required}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={patientName}
+                          onChange={(e) => setPatientName(e.target.value)}
+                          className={styles.input}
+                          placeholder="Sesuai KTP"
+                          required
+                        />
+                      </div>
+                      <div className={styles.inputGroup}>
+                        <label>
+                          Nomor Telepon{" "}
+                          <span className={styles.required}>*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={patientPhone}
+                          onChange={(e) => setPatientPhone(e.target.value)}
+                          className={styles.input}
+                          placeholder="08xx-xxxx-xxxx"
+                          required
+                        />
+                      </div>
+                      <div className={styles.inputGroup}>
+                        <label>Nomor BPJS (Opsional)</label>
+                        <input
+                          type="text"
+                          value={bpjsNumber}
+                          onChange={(e) => setBpjsNumber(e.target.value)}
+                          className={styles.input}
+                          placeholder="Jika ada"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className={styles.submitBtn}
+                disabled={
+                  isLoading ||
+                  !selectedPoly ||
+                  !selectedDoctor ||
+                  (patientType === "existing" && !bpjsNumber) ||
+                  (patientType === "new" && (!patientName || !patientPhone))
+                }
+              >
+                {isLoading ? "Memproses..." : "Ambil Nomor Antrian"}
+              </button>
+            </form>
           </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="patientPhone">Nomor Telepon</label>
-            <input
-              id="patientPhone"
-              type="tel"
-              value={patientPhone}
-              onChange={(e) => setPatientPhone(e.target.value)}
-              className={styles.input}
-              placeholder="08xxxxxxxxxx"
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="bpjsNumber">Nomor BPJS (Opsional)</label>
-            <input
-              id="bpjsNumber"
-              type="text"
-              value={bpjsNumber}
-              onChange={(e) => setBpjsNumber(e.target.value)}
-              className={styles.input}
-              placeholder="Masukkan nomor BPJS jika ada"
-              maxLength={13}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className={styles.submitBtn}
-            disabled={isLoading || !selectedPoly || !patientName}
-          >
-            {isLoading ? "Memproses..." : "Ambil Nomor Antrian"}
-          </button>
-        </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

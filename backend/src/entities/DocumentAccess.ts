@@ -7,7 +7,8 @@ import {
   JoinColumn,
 } from "typeorm";
 import { Document } from "./Document";
-import { User, UserRole } from "./User";
+import { User } from "./User";
+import { Role } from "./Role";
 import { Polyclinic } from "./Polyclinic";
 import { Doctor } from "./Doctor";
 import { DocumentFolder } from "./DocumentFolder";
@@ -53,8 +54,13 @@ export class DocumentAccess {
   user?: User;
 
   // Role-based access (when accessCriteriaType = "role")
-  @Column({ type: "varchar", length: 50, nullable: true })
-  role?: string;
+  // Role-based access (when accessCriteriaType = "role")
+  @Column({ nullable: true })
+  roleId?: string;
+
+  @ManyToOne(() => Role, { nullable: true })
+  @JoinColumn({ name: "role_id" })
+  role?: Role;
 
   // Polyclinic-based access (when accessCriteriaType = "polyclinic")
   @Column({ name: "polyclinic_id", nullable: true })

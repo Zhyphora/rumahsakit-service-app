@@ -88,4 +88,10 @@ export class PatientService {
       where: { medicalRecordNumber: mrn },
     });
   }
+
+  async getPatientByUserId(userId: string) {
+    return this.patientRepository.findOne({
+      where: { userId },
+    });
+  }
 }

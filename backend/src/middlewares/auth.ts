@@ -26,6 +26,7 @@ export const authMiddleware = async (
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({
       where: { id: decoded.userId, isActive: true },
+      relations: ["role"],
     });
 
     if (!user) {
@@ -47,7 +48,8 @@ export const roleMiddleware = (...roles: string[]) => {
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.role?.name;
+    if (!userRole || !roles.includes(userRole)) {
       res.status(403).json({ message: "Access denied" });
       return;
     }

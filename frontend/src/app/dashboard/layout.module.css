@@ -5,12 +5,12 @@
 }
 
 .navbar {
-  background: #1e3a5f;
+  background: white;
   padding: 0.75rem 1.5rem;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .navbarContent {
@@ -24,8 +24,17 @@
 .brand {
   font-size: 1.5rem;
   font-weight: 700;
-  color: white;
+  color: #0f172a;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand span {
+  background: linear-gradient(to right, #0284c7, #2563eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .navRight {
@@ -35,23 +44,26 @@
 }
 
 .userName {
-  color: rgba(255, 255, 255, 0.9);
+  color: #64748b;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .logoutBtn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
+  background: #fff;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
   cursor: pointer;
   font-size: 0.875rem;
   transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .logoutBtn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #fee2e2;
+  border-color: #fecaca;
 }
 
 .main {
@@ -89,12 +101,32 @@
 }
 
 .navLink:hover {
-  background: #f3f4f6;
-  color: #0066cc;
+  background: #f0f9ff;
+  color: #0284c7;
 }
 
 .navIcon {
   font-size: 1.25rem;
+}
+
+.subNav {
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.subNavLink {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.9rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.subNavLink:hover {
+  background: #f9fafb;
+  color: #0066cc;
 }
 
 .content {

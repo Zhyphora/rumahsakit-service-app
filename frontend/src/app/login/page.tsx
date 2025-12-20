@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import styles from "./login.module.css";
+import { Suspense } from "react";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
+function LoginForm() {
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginByBpjs } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role");
+  const isPatient = role === "patient";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,10 +23,14 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      if (isPatient) {
+        await loginByBpjs(identifier);
+      } else {
+        await login(identifier, password);
+      }
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -32,42 +40,48 @@ export default function LoginPage() {
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Rumah Sakit</h1>
-          <p className={styles.subtitle}>Silakan login untuk melanjutkan</p>
+          <h1 className={styles.title}>MediKu</h1>
+          <p className={styles.subtitle}>
+            {isPatient ? "Login Pasien" : "Silakan login untuk melanjutkan"}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           {error && <div className={styles.error}>{error}</div>}
 
           <div className={styles.formGroup}>
-            <label htmlFor="email" className={styles.label}>
-              Email
+            <label htmlFor="identifier" className={styles.label}>
+              {isPatient ? "Nomor BPJS" : "Email"}
             </label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="identifier"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               className={styles.input}
-              placeholder="admin@rumahsakit.com"
+              placeholder={
+                isPatient ? "Masukkan Nomor BPJS" : "admin@mediku.com"
+              }
               required
             />
           </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="password" className={styles.label}>
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={styles.input}
-              placeholder="••••••••"
-              required
-            />
-          </div>
+          {!isPatient && (
+            <div className={styles.formGroup}>
+              <label htmlFor="password" className={styles.label}>
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={styles.input}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          )}
 
           <button type="submit" className={styles.button} disabled={isLoading}>
             {isLoading ? "Loading..." : "Login"}
@@ -75,10 +89,27 @@ export default function LoginPage() {
         </form>
 
         <div className={styles.demo}>
-          <p>Demo Credentials:</p>
-          <code>admin@rumahsakit.com / password123</code>
+          {isPatient ? (
+            <>
+              <p>Demo Pasien:</p>
+              <code>BPJS: 000123456789</code>
+            </>
+          ) : (
+            <>
+              <p>Demo Credentials:</p>
+              <code>admin@mediku.com / password123</code>
+            </>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

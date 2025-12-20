@@ -138,4 +138,22 @@ export class PatientController {
       sendServerError(res, error, "Gagal memuat rekam medis");
     }
   };
+
+  // Get my profile (for logged-in patient)
+  getMyProfile = async (req: any, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        sendError(res, "Not authenticated");
+        return;
+      }
+      const patient = await this.patientService.getPatientByUserId(req.user.id);
+      if (!patient) {
+        sendNotFound(res, "Profil pasien tidak ditemukan");
+        return;
+      }
+      sendSuccess(res, patient, "Profil berhasil dimuat");
+    } catch (error: any) {
+      sendServerError(res, error, "Gagal memuat profil");
+    }
+  };
 }

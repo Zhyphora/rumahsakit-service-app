@@ -38,13 +38,18 @@ export default function PharmacyPage() {
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
   const [dispensing, setDispensing] = useState(false);
-  const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
 
-  // Check if user is pharmacist (from staff info or admin)
+  // Get role name from user (could be string or object)
+  const roleName =
+    typeof user?.role === "string" ? user.role : user?.role?.name;
+
+  // Check if user is pharmacist
   const isPharmacist =
-    staffInfo?.department === "Farmasi" ||
-    staffInfo?.position === "Apoteker" ||
-    user?.role === "admin";
+    roleName === "pharmacist" ||
+    roleName === "Apoteker" ||
+    roleName === "admin" ||
+    user?.staff?.department?.toLowerCase().includes("farmasi") ||
+    user?.staff?.position?.toLowerCase().includes("apoteker");
 
   useEffect(() => {
     loadPrescriptions();
@@ -66,7 +71,7 @@ export default function PharmacyPage() {
 
   const handleDispense = async (id: string) => {
     // Only pharmacists can dispense
-    if (!isPharmacist && user?.role !== "admin") {
+    if (!isPharmacist) {
       Swal.fire({
         icon: "error",
         title: "Akses Ditolak",
@@ -138,7 +143,7 @@ export default function PharmacyPage() {
   }
 
   // Show access denied if not pharmacist
-  if (!isPharmacist && user?.role !== "admin") {
+  if (!isPharmacist) {
     return (
       <div className={styles.container}>
         <div className={styles.accessDenied}>

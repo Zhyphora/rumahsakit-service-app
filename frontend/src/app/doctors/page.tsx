@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import styles from "./doctors.module.css";
+import Navbar from "@/components/Navbar";
 import {
   FiClock,
   FiUser,
@@ -97,12 +98,9 @@ export default function DoctorsPage() {
 
   return (
     <div className={styles.container}>
+      <Navbar />
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <Link href="/" className={styles.brand}>
-            <FiActivity size={24} />
-            <span>Rumah Sakit</span>
-          </Link>
           <p className={styles.subtitle}>
             {currentTime?.toLocaleDateString("id-ID", {
               weekday: "long",
@@ -130,8 +128,6 @@ export default function DoctorsPage() {
             const { available, statusText } = isDoctorAvailable(
               doctor.schedule
             );
-            const isActuallyAvailable = available && !doctor.isServing;
-
             return (
               <div
                 key={doctor.id}
@@ -207,7 +203,7 @@ export default function DoctorsPage() {
       )}
 
       <footer className={styles.footer}>
-        <p>Rumah Sakit - Jadwal Dokter Bertugas</p>
+        <p>MediKu - Jadwal Dokter Bertugas</p>
       </footer>
     </div>
   );

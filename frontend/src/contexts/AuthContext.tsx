@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  loginByBpjs: (bpjsNumber: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -47,6 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("user", JSON.stringify(userData));
   };
 
+  const loginByBpjs = async (bpjsNumber: string) => {
+    const response = await api.post("/auth/login-bpjs", { bpjsNumber });
+    const { user: userData, token: authToken } = response.data;
+
+    setUser(userData);
+    setToken(authToken);
+    localStorage.setItem("token", authToken);
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -55,7 +66,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, token, login, loginByBpjs, logout, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );

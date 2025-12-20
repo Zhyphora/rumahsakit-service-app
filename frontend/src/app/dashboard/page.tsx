@@ -7,6 +7,7 @@ import {
   DoctorDashboard,
   PharmacyDashboard,
   ReceptionDashboard,
+  PatientDashboard,
 } from "./components";
 
 export default function DashboardPage() {
@@ -16,12 +17,34 @@ export default function DashboardPage() {
   const renderDashboard = () => {
     if (!user) return null;
 
-    switch (user.role) {
+    const roleName =
+      typeof user.role === "string" ? user.role : user.role?.name;
+
+    switch (roleName) {
       case "admin":
         return <AdminDashboard />;
 
       case "doctor":
         return <DoctorDashboard />;
+
+      case "pharmacist":
+        return <PharmacyDashboard />;
+
+      case "registration_staff":
+        return <ReceptionDashboard />;
+
+      case "nurse":
+        // Using ReceptionDashboard as placeholder or creating new NurseDashboard?
+        // Reusing ReceptionDashboard for now as it probably has queue etc.
+        return <ReceptionDashboard />;
+
+      case "inventory_staff":
+        // Maybe PharmacyDashboard has stock? or we need general stock dashboard.
+        // PharmacyDashboard usually has stock items.
+        return <PharmacyDashboard />;
+
+      case "patient":
+        return <PatientDashboard />;
 
       case "staff":
         // Differentiate based on department stored in staff relation

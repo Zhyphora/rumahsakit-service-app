@@ -2,6 +2,8 @@ import { AppDataSource } from "../config/database";
 import { User } from "../entities/User";
 import { Doctor } from "../entities/Doctor";
 import { Staff } from "../entities/Staff";
+import { Patient } from "../entities/Patient";
+import { Role } from "../entities/Role";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
@@ -10,6 +12,8 @@ export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
   private doctorRepository = AppDataSource.getRepository(Doctor);
   private staffRepository = AppDataSource.getRepository(Staff);
+  private patientRepository = AppDataSource.getRepository(Patient);
+  private roleRepository = AppDataSource.getRepository(Role);
 
   async register(data: {
     email: string;
@@ -35,13 +39,20 @@ export class AuthService {
       throw new Error("Email already registered");
     }
 
+    const roleEntity = await this.roleRepository.findOne({
+      where: { name: data.role },
+    });
+    if (!roleEntity) {
+      throw new Error(`Role ${data.role} not found`);
+    }
+
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     const user = this.userRepository.create({
       email: data.email,
       password: hashedPassword,
       name: data.name,
-      role: data.role,
+      role: roleEntity,
       phone: data.phone,
     });
 
@@ -68,9 +79,27 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.userRepository.findOne({
-      where: { email, isActive: true },
-    });
+    let user = null;
+
+    // Check if input looks like an email
+    if (email.includes("@")) {
+      user = await this.userRepository.findOne({
+        where: { email, isActive: true },
+        relations: ["role"],
+      });
+    } else {
+      // Assume BPJS Number or Username. For now check BPJS via Patient entity.
+      const patient = await this.patientRepository.findOne({
+        where: { bpjsNumber: email },
+      });
+
+      if (patient && patient.userId) {
+        user = await this.userRepository.findOne({
+          where: { id: patient.userId, isActive: true },
+          relations: ["role"],
+        });
+      }
+    }
 
     if (!user) {
       throw new Error("Invalid email or password");
@@ -89,13 +118,21 @@ export class AuthService {
 
     // Get additional data based on role
     let additionalData = {};
-    if (user.role === "doctor") {
+    if (user.role.name === "doctor") {
       const doctor = await this.doctorRepository.findOne({
         where: { userId: user.id },
         relations: ["polyclinic"],
       });
       additionalData = { doctor };
-    } else if (user.role === "staff") {
+    } else if (
+      [
+        "staff",
+        "pharmacist",
+        "nurse",
+        "registration_staff",
+        "inventory_staff",
+      ].includes(user.role.name)
+    ) {
       const staff = await this.staffRepository.findOne({
         where: { userId: user.id },
       });
@@ -108,9 +145,40 @@ export class AuthService {
     };
   }
 
+  async loginByBpjs(bpjsNumber: string) {
+    const patient = await this.patientRepository.findOne({
+      where: { bpjsNumber },
+    });
+
+    if (!patient || !patient.userId) {
+      throw new Error("Nomor BPJS tidak ditemukan atau belum terdaftar.");
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: patient.userId, isActive: true },
+      relations: ["role"],
+    });
+
+    if (!user) {
+      throw new Error("User linked to Patient not found or inactive.");
+    }
+
+    const token = jwt.sign({ userId: user.id }, env.jwt.secret, {
+      expiresIn: env.jwt.expiresIn as jwt.SignOptions["expiresIn"],
+    } as jwt.SignOptions);
+
+    const { password: _, ...userWithoutPassword } = user;
+
+    return {
+      user: userWithoutPassword,
+      token,
+    };
+  }
+
   async getProfile(userId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
+      relations: ["role"],
     });
 
     if (!user) {
@@ -120,13 +188,21 @@ export class AuthService {
     const { password: _, ...userWithoutPassword } = user;
 
     let additionalData = {};
-    if (user.role === "doctor") {
+    if (user.role.name === "doctor") {
       const doctor = await this.doctorRepository.findOne({
         where: { userId: user.id },
         relations: ["polyclinic"],
       });
       additionalData = { doctor };
-    } else if (user.role === "staff") {
+    } else if (
+      [
+        "staff",
+        "pharmacist",
+        "nurse",
+        "registration_staff",
+        "inventory_staff",
+      ].includes(user.role.name)
+    ) {
       const staff = await this.staffRepository.findOne({
         where: { userId: user.id },
       });

@@ -11,7 +11,8 @@ export const permissionMiddleware = (feature: string) => {
         return res.status(401).json({ message: "Not authenticated" });
       }
       const has = await accessControlService.hasAccess(
-        req.user.role,
+        req.user.role?.name,
+        req.user.role?.id,
         feature,
         req.user.id
       );

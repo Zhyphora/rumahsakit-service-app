@@ -43,4 +43,7 @@ router.post(
   queueController.skipNumber
 );
 
+// Get my queues (for patient dashboard)
+router.get("/my", authMiddleware, queueController.getMyQueue);
+
 export default router;

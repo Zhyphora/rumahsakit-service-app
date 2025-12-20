@@ -92,4 +92,18 @@ export class QueueController {
       res.status(400).json({ message: error.message });
     }
   };
+
+  // Get my queue (for patient)
+  getMyQueue = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+      }
+      const queue = await this.queueService.getMyQueue(req.user.id);
+      res.json(queue);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
 }

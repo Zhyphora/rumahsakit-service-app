@@ -162,7 +162,9 @@ export default function DocumentAccessModal({
   const getCriteriaLabel = (access: DocumentAccess): string => {
     switch (access.accessCriteriaType) {
       case "role":
-        return `Role: ${access.role}`;
+        return `Role: ${
+          typeof access.role === "string" ? access.role : access.role?.name
+        }`;
       case "polyclinic":
         return `Poli: ${access.polyclinic?.name || access.polyclinicId}`;
       case "doctor":
@@ -368,7 +370,11 @@ export default function DocumentAccessModal({
                 <option value="">-- Pilih User --</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.name} ({user.role})
+                    {user.name} (
+                    {typeof user.role === "string"
+                      ? user.role
+                      : user.role?.name}
+                    )
                   </option>
                 ))}
               </select>

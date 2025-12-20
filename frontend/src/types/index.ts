@@ -1,8 +1,14 @@
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: "admin" | "doctor" | "staff" | "patient";
+  role: Role | string; // Support both for flexibility, though usually object now
   phone?: string;
   isActive: boolean;
   doctor?: Doctor;
@@ -38,6 +44,7 @@ export interface Patient {
   emergencyContact?: string;
   bloodType?: string;
   allergies?: string;
+  bpjsNumber?: string;
 }
 
 export interface Polyclinic {
@@ -161,7 +168,7 @@ export interface DocumentAccess {
   accessCriteriaType: AccessCriteriaType;
   userId?: string;
   user?: User;
-  role?: string;
+  role?: Role | string;
   polyclinicId?: string;
   polyclinic?: Polyclinic;
   doctorId?: string;
@@ -200,6 +207,51 @@ export interface LeaveRequest {
   approvedBy?: string;
   approver?: User;
   approvedAt?: string;
+}
+
+export interface MedicalRecord {
+  id: string;
+  patientId: string;
+  patient?: Patient;
+  doctorId: string;
+  doctor?: Doctor;
+  polyclinicId: string;
+  polyclinic?: Polyclinic;
+  visitDate: string;
+  diagnosis: string;
+  actions?: string;
+  notes?: string;
+  prescriptions?: Prescription[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Prescription {
+  id: string;
+  // ... basic fields if not already defined, but it might be missing from previous types check.
+  // Let's check if Prescription type exists.
+  // Index.ts showed QueueNumber, Item but not Prescription in the file view earlier.
+  // Re-checking the earlier view_file of frontend/src/types/index.ts...
+  // It stopped at line 209 (AuthResponse). Prescription was NOT there.
+  // Need to add Prescription too.
+  queueNumberId?: string;
+  patientId: string;
+  doctorId: string;
+  medicalRecordId?: string;
+  status: "pending" | "dispensing" | "completed" | "cancelled";
+  diagnosis?: string;
+  notes?: string;
+  items?: PrescriptionItem[];
+  dispensedAt?: string;
+}
+
+export interface PrescriptionItem {
+  id: string;
+  prescriptionId: string;
+  itemId: string;
+  item?: Item;
+  quantity: number;
+  notes?: string;
 }
 
 export interface AuthResponse {

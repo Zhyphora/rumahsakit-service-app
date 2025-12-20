@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import styles from "./display.module.css";
+import Navbar from "@/components/Navbar";
 import { FiClock, FiUser, FiActivity } from "react-icons/fi";
 
 interface DoctorQueueData {
@@ -97,9 +98,12 @@ export default function QueueDisplayPage() {
 
   return (
     <div className={styles.container}>
+      <Navbar />
       <header className={styles.header}>
-        <h1 className={styles.title}>Rumah Sakit</h1>
-        <div className={styles.time}>
+        <div
+          className={styles.time}
+          style={{ width: "100%", textAlign: "right" }}
+        >
           {mounted && currentTime ? formatDate(currentTime) : ""}
           <span className={styles.clock}>
             {mounted && currentTime ? formatTime(currentTime) : "--:--:--"}
@@ -168,7 +172,7 @@ export default function QueueDisplayPage() {
       <footer className={styles.footer}>
         <div className={styles.marquee}>
           <span>
-            Selamat datang di Rumah Sakit • Silakan menunggu nomor antrian Anda
+            Selamat datang di MediKu • Silakan menunggu nomor antrian Anda
             dipanggil • Untuk informasi lebih lanjut, silakan hubungi petugas
             loket •
           </span>

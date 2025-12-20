@@ -4,56 +4,58 @@ import { useState, useEffect, useMemo } from "react";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 import styles from "./access.module.css";
-import {
-  FiLock,
-  FiTrash2,
-  FiPlus,
-  FiUser,
-  FiUsers,
-  FiEdit2,
-} from "react-icons/fi";
+import { FiTrash2, FiPlus, FiUser, FiUsers, FiEdit2 } from "react-icons/fi";
 
 interface User {
   id: string;
   name: string;
-  role: string;
+  role: any; // Role object or string depending on backend response, assumed object now
   email: string;
+}
+
+interface Role {
+  id: string;
+  name: string;
+  description: string;
 }
 
 interface AccessControl {
   id: string;
-  role?: string;
+  role?: Role; // Updated to be object if possible, or handle string
+  roleId?: string;
   userId?: string;
   user?: User;
   feature: string;
 }
 
 interface GroupedAccess {
-  key: string; // unique key for the group (e.g. "role:admin" or "user:uuid")
+  key: string;
   targetName: string;
-  targetRole?: string; // for user specific display
+  targetRole?: string;
   type: "role" | "user";
-  id: string; // role name or user id
+  id: string; // roleId or userId
   features: string[];
 }
 
 export default function AccessControlPage() {
   const [accessControls, setAccessControls] = useState<AccessControl[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
   // Form state
   const [isEditing, setIsEditing] = useState(false);
   const [targetType, setTargetType] = useState<"role" | "user">("role");
-  const [role, setRole] = useState("staff");
+  const [selectedRoleId, setSelectedRoleId] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [features, setFeatures] = useState<string[]>([]);
-  const [initialFeatures, setInitialFeatures] = useState<string[]>([]); // To track removed features
+  const [initialFeatures, setInitialFeatures] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
     loadUsers();
+    loadRoles();
   }, []);
 
   const loadData = async () => {
@@ -76,34 +78,59 @@ export default function AccessControlPage() {
     }
   };
 
-  // Group the flat access list into User/Role buckets
+  const loadRoles = async () => {
+    try {
+      const res = await api.get("/roles");
+      setRoles(res.data);
+      if (res.data.length > 0) {
+        setSelectedRoleId(res.data[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to load roles");
+    }
+  };
+
+  // Group the flat access list
   const groupedAccess = useMemo(() => {
     const groups: Record<string, GroupedAccess> = {};
 
     accessControls.forEach((ac) => {
+      // Prioritize roleId check, fallback to legacy role string if any
+      const roleRef = ac.role;
+
       if (ac.userId && ac.user) {
         // User Specific Group
         const key = `user:${ac.userId}`;
         if (!groups[key]) {
+          const userRoleName =
+            typeof ac.user.role === "object"
+              ? ac.user.role?.name
+              : ac.user.role;
           groups[key] = {
             key,
             targetName: ac.user.name,
-            targetRole: ac.user.role,
+            targetRole: userRoleName,
             type: "user",
             id: ac.userId,
             features: [],
           };
         }
         groups[key].features.push(ac.feature);
-      } else if (ac.role) {
+      } else if (roleRef) {
         // Role Group
-        const key = `role:${ac.role}`;
+        // Handle if roleRef is object or string (it should be object now)
+        const roleId =
+          typeof roleRef === "object" ? roleRef.id : ac.roleId || roleRef;
+        const roleName =
+          typeof roleRef === "object" ? roleRef.name : String(roleRef);
+
+        const key = `role:${roleId}`;
         if (!groups[key]) {
           groups[key] = {
             key,
-            targetName: ac.role, // role name itself
+            targetName: roleName,
             type: "role",
-            id: ac.role,
+            id: String(roleId),
             features: [],
           };
         }
@@ -118,19 +145,20 @@ export default function AccessControlPage() {
     setIsEditing(true);
     setTargetType(group.type);
     if (group.type === "role") {
-      setRole(group.id);
+      setSelectedRoleId(group.id);
     } else {
       setSelectedUserId(group.id);
     }
     setFeatures([...group.features]);
-    setInitialFeatures([...group.features]); // Snapshot for diffing
+    setInitialFeatures([...group.features]);
     setShowModal(true);
   };
 
   const handleAddStart = () => {
     setIsEditing(false);
     setTargetType("role");
-    setRole("staff");
+    // select first role by default
+    if (roles.length > 0) setSelectedRoleId(roles[0].id);
     setSelectedUserId("");
     setFeatures([]);
     setInitialFeatures([]);
@@ -140,18 +168,15 @@ export default function AccessControlPage() {
   const handleDeleteGroup = async (group: GroupedAccess) => {
     if (!confirm(`Hapus semua akses untuk ${group.targetName}?`)) return;
 
-    // We need to delete permission one by one or create a bulk delete endpoint (not checking).
-    // We'll iterate delete for now as existing DELETE endpoint is by ID, but we only have grouped data here.
-    // Wait, we need the IDs of the AccessControl entries to delete them.
-    // Efficiency check: filtering accessControls to find IDs.
-
     const entriesToDelete = accessControls.filter((ac) => {
       if (group.type === "user") return ac.userId === group.id;
-      return ac.role === group.id && !ac.userId;
+      // check roleId equality
+      const rId =
+        ac.roleId || (typeof ac.role === "object" ? ac.role.id : ac.role);
+      return rId === group.id && !ac.userId;
     });
 
     try {
-      // Parallel delete
       await Promise.all(
         entriesToDelete.map((ac) =>
           api.delete(`/admin/access-controls/${ac.id}`)
@@ -168,25 +193,23 @@ export default function AccessControlPage() {
     e.preventDefault();
     if (features.length === 0) {
       toast.error("Pilih minimal satu fitur access");
-      // Actually, if editing, 0 features might mean "remove all". But let's keep it safe.
-      // If user unchecks all, maybe they should use delete.
       return;
     }
     if (targetType === "user" && !selectedUserId) {
       toast.error("Pilih user terlebih dahulu");
       return;
     }
+    if (targetType === "role" && !selectedRoleId) {
+      toast.error("Pilih role terlebih dahulu");
+      return;
+    }
 
     try {
-      // 1. Handle Additions (Features present in 'features' but not in 'initialFeatures')
-      // Note: If NOT editing (New), initialFeatures is empty, so all are additions.
       const toAdd = features.filter((f) => !initialFeatures.includes(f));
-
-      // 2. Handle Removals (Features present in 'initialFeatures' but not in 'features')
       const toRemove = initialFeatures.filter((f) => !features.includes(f));
 
       const payloadBase: any = {};
-      if (targetType === "role") payloadBase.role = role;
+      if (targetType === "role") payloadBase.roleId = selectedRoleId;
       else payloadBase.userId = selectedUserId;
 
       // Execute Additions
@@ -225,7 +248,6 @@ export default function AccessControlPage() {
     );
   }
 
-  // Define feature groups outside functionality constant
   const FEATURE_GROUPS = [
     {
       label: "Stock & Inventory",
@@ -234,6 +256,9 @@ export default function AccessControlPage() {
         { val: "stock:manage", label: "Kelola Barang" },
         { val: "stock:opname", label: "Stock Opname" },
         { val: "stock:adjust", label: "Stok Adjustment" },
+        { val: "stock:correction", label: "Stok Correction" },
+        { val: "stock:adjust_in", label: "Stok Masuk" },
+        { val: "stock:adjust_out", label: "Stok Keluar" },
       ],
     },
     {
@@ -299,7 +324,7 @@ export default function AccessControlPage() {
                       <FiUser className={styles.iconSmall} />
                       <span>{group.targetName}</span>
                       <small className={styles.userRole}>
-                        ({group.targetRole})
+                        ({group.targetRole || "Unknown"})
                       </small>
                     </div>
                   ) : (
@@ -317,17 +342,17 @@ export default function AccessControlPage() {
                   <span style={{ fontWeight: 500, color: "#4b5563" }}>
                     {group.features.length} Features
                   </span>
-                  <div
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "#9ca3af",
-                      maxWidth: "300px",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {group.features.join(", ")}
+                  <div className={styles.featureTagsList}>
+                    {group.features.slice(0, 3).map((f) => (
+                      <span key={f} className={styles.featureTag}>
+                        {f}
+                      </span>
+                    ))}
+                    {group.features.length > 3 && (
+                      <span className={styles.moreTag}>
+                        +{group.features.length - 3}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td>
@@ -364,13 +389,14 @@ export default function AccessControlPage() {
               {isEditing
                 ? `Edit Akses: ${
                     targetType === "role"
-                      ? role
-                      : users.find((u) => u.id === selectedUserId)?.name
+                      ? roles.find((r) => r.id === selectedRoleId)?.name ||
+                        "Role"
+                      : users.find((u) => u.id === selectedUserId)?.name ||
+                        "User"
                   }`
                 : "Tambah Akses Baru"}
             </h2>
             <form onSubmit={handleSubmit}>
-              {/* Target Type Switcher - Disable if editing */}
               <div className={styles.targetTypeSwitcher}>
                 <button
                   type="button"
@@ -398,15 +424,16 @@ export default function AccessControlPage() {
                 <div className={styles.formGroup}>
                   <label>Pilih Role</label>
                   <select
-                    value={role}
-                    disabled={isEditing} // Cannot change target while editing permissions
-                    onChange={(e) => setRole(e.target.value)}
+                    value={selectedRoleId}
+                    disabled={isEditing}
+                    onChange={(e) => setSelectedRoleId(e.target.value)}
                     className={styles.input}
                   >
-                    <option value="admin">Admin</option>
-                    <option value="doctor">Doctor</option>
-                    <option value="staff">Staff</option>
-                    <option value="patient">Patient</option>
+                    {roles.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               ) : (
@@ -422,7 +449,8 @@ export default function AccessControlPage() {
                     <option value="">-- Pilih User --</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
-                        {u.name} ({u.role})
+                        {u.name} (
+                        {typeof u.role === "object" ? u.role.name : u.role})
                       </option>
                     ))}
                   </select>
@@ -430,24 +458,9 @@ export default function AccessControlPage() {
               )}
 
               <div className={styles.formGroup}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "0.5rem",
-                  }}
-                >
+                <div className={styles.flexBetween}>
                   <label style={{ marginBottom: 0 }}>Pilih Feature</label>
-                  <label
-                    className={styles.checkboxLabel}
-                    style={{
-                      padding: "0.25rem 0.5rem",
-                      fontSize: "0.875rem",
-                      border: "none",
-                      background: "transparent",
-                    }}
-                  >
+                  <label className={styles.itemCenter}>
                     <input
                       type="checkbox"
                       checked={isAllSelected}
@@ -455,8 +468,9 @@ export default function AccessControlPage() {
                         if (input) input.indeterminate = isIndeterminate;
                       }}
                       onChange={(e) => handleSelectAll(e.target.checked)}
+                      style={{ marginRight: "0.5rem" }}
                     />
-                    Pilih Semua
+                    <span style={{ fontSize: "0.875rem" }}>Pilih Semua</span>
                   </label>
                 </div>
 
@@ -488,27 +502,20 @@ export default function AccessControlPage() {
                     </div>
                   ))}
                 </div>
-                <small className={styles.hint}>
-                  Centang fitur yang ingin diberikan aksesnya
-                </small>
               </div>
               <div className={styles.modalActions}>
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
-                    setFeatures([]);
-                    setSelectedUserId("");
-                    setIsEditing(false); // Reset edit mode
+                    setIsEditing(false);
                   }}
                   className={styles.cancelBtn}
                 >
                   Batal
                 </button>
                 <button type="submit" className={styles.submitBtn}>
-                  {isEditing
-                    ? "Simpan Perubahan"
-                    : `Simpan Akses (${features.length})`}
+                  {isEditing ? "Simpan Perubahan" : "Simpan Akses"}
                 </button>
               </div>
             </form>

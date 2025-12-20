@@ -5,15 +5,20 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { User, UserRole } from "./User";
+import { User } from "./User";
+import { Role } from "./Role";
 
 @Entity("access_controls")
 export class AccessControl {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ type: "varchar", length: 50, nullable: true })
-  role?: UserRole;
+  @Column({ nullable: true })
+  roleId?: string;
+
+  @ManyToOne(() => Role, (role) => role.accessControls)
+  @JoinColumn({ name: "role_id" })
+  role?: Role;
 
   @Column({ name: "user_id", type: "uuid", nullable: true })
   userId?: string;

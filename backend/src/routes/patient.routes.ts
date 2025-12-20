@@ -5,7 +5,10 @@ import { authMiddleware, roleMiddleware } from "../middlewares/auth";
 const router = Router();
 const patientController = new PatientController();
 
-// All routes require authentication
+// My Profile route - requires only auth (for patient dashboard)
+router.get("/my-profile", authMiddleware, patientController.getMyProfile);
+
+// All other routes require authentication + specific roles
 router.use(authMiddleware);
 router.use(roleMiddleware("admin", "doctor", "staff"));
 

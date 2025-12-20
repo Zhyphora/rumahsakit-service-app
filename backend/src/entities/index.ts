@@ -17,3 +17,4 @@ export * from "./Attendance";
 export * from "./LeaveRequest";
 export * from "./Prescription";
 export * from "./PrescriptionItem";
+export * from "./MedicalRecord";

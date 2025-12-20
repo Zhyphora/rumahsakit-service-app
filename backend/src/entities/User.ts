@@ -5,11 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
+import { Role } from "./Role";
 import { Doctor } from "./Doctor";
 import { Staff } from "./Staff";
-
-export type UserRole = "admin" | "doctor" | "staff" | "patient";
 
 @Entity("users")
 export class User {
@@ -25,8 +26,12 @@ export class User {
   @Column()
   name!: string;
 
-  @Column({ type: "varchar", length: 50 })
-  role!: UserRole;
+  @Column({ nullable: true })
+  roleId?: string;
+
+  @ManyToOne(() => Role, (role) => role.users)
+  @JoinColumn({ name: "role_id" })
+  role!: Role;
 
   @Column({ nullable: true })
   phone?: string;
