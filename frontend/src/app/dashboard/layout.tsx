@@ -228,7 +228,7 @@ export default function DashboardLayout({
         <aside className={styles.sidebar}>
           <ul className={styles.sidebarNav}>
             <ul className={styles.sidebarNav}>
-              {navItems.map((item: any) => {
+              {navItems.map((item: NavItem) => {
                 if (item.subItems) {
                   return (
                     <li key={item.label} className={styles.navGroup}>
@@ -268,7 +268,7 @@ export default function DashboardLayout({
                           listStyle: "none",
                         }}
                       >
-                        {item.subItems.map((sub) => (
+                        {item.subItems.map((sub: SubNavItem) => (
                           <li key={sub.href}>
                             <Link href={sub.href} className={styles.subNavLink}>
                               {sub.label}
@@ -281,8 +281,8 @@ export default function DashboardLayout({
                 }
 
                 return (
-                  <li key={item.href}>
-                    <Link href={item.href} className={styles.navLink}>
+                  <li key={item.href || item.label}>
+                    <Link href={item.href || "#"} className={styles.navLink}>
                       <item.icon className={styles.navIcon} size={18} />
                       {item.label}
                     </Link>
