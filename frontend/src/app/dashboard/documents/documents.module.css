@@ -10,6 +10,36 @@
   align-items: center;
 }
 
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .title {
   font-size: 2rem;
   font-weight: 700;
@@ -24,14 +54,126 @@
   font-size: 1rem;
   font-weight: 500;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .uploadBtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
+
+/* Folder Grid */
+.folderGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.folderCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.folderCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #0066cc;
+}
+
+.folderIcon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.folderInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.folderName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folderDesc {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folderMeta {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.folderDeleteBtn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.folderCard:hover .folderDeleteBtn {
+  opacity: 1;
+}
+
+.folderDeleteBtn:hover {
+  background: #fee2e2;
+  transform: scale(1.1);
+}
+
+/* Folder Badge in Upload Modal */
+.folderBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .grid {
@@ -101,15 +243,21 @@
 }
 
 .emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 4rem;
+  padding: 4rem 2rem;
   background: white;
   border-radius: 1rem;
   color: #9ca3af;
+  gap: 1rem;
 }
 
 .emptyState p {
-  margin-bottom: 1.5rem;
+  margin: 0.5rem 0 1rem;
+  font-size: 1.1rem;
 }
 
 /* Modal */
@@ -119,11 +267,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
+  padding: 1rem;
 }
 
 .modalContent {
@@ -346,4 +498,509 @@
 .docActions {
   display: flex;
   gap: 0.5rem;
+}
+
+/* ========== NEW UPLOAD MODAL STYLES ========== */
+
+.uploadModalContent {
+  background: white;
+  border-radius: 1.25rem;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.uploadModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #0066cc, #004c99);
+  color: white;
+}
+
+.uploadModalHeader h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.uploadForm {
+  padding: 1.75rem 2rem 2rem;
+}
+
+/* Dropzone */
+.dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 1rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f9fafb;
+  margin-bottom: 1.5rem;
+}
+
+.dropzone:hover {
+  border-color: #0066cc;
+  background: #f0f7ff;
+}
+
+.dropzoneActive {
+  border-color: #0066cc;
+  background: #e0f2ff;
+  border-style: solid;
+}
+
+.dropzoneContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dropzoneIcon {
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+}
+
+.dropzoneText {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.dropzoneHighlight {
+  color: #0066cc;
+  font-weight: 600;
+}
+
+.dropzoneHint {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+/* File Preview */
+.filePreview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.filePreviewIcon {
+  flex-shrink: 0;
+}
+
+.filePreviewInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.fileName {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileSize {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.removeFileBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.removeFileBtn:hover {
+  background: #fecaca;
+  transform: scale(1.1);
+}
+
+/* Upload Form Group */
+.uploadFormGroup {
+  margin-bottom: 1.25rem;
+}
+
+.uploadLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.uploadInput,
+.uploadSelect {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: white;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.uploadInput:focus,
+.uploadSelect:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.uploadInput::placeholder {
+  color: #9ca3af;
+}
+
+/* Confidential Checkbox */
+.confidentialCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  transition: all 0.2s;
+}
+
+.confidentialCheckbox:hover {
+  background: #fde68a;
+}
+
+.confidentialCheckbox input {
+  display: none;
+}
+
+.checkboxCustom {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confidentialCheckbox input:checked + .checkboxCustom {
+  background: #16a34a;
+}
+
+.confidentialCheckbox span {
+  font-weight: 500;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+/* Upload Actions */
+.uploadActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.cancelBtnNew {
+  flex: 1;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #374151;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelBtnNew:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.submitBtnNew {
+  flex: 2;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.submitBtnNew:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.submitBtnNew:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* Large Modal for Create Folder */
+.uploadModalContentLarge {
+  background: white;
+  border-radius: 1.25rem;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease;
+}
+
+/* Small Dropzone for adding files in folder modal */
+.dropzoneSmall {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.dropzoneSmall:hover {
+  border-color: #0066cc;
+  background: #f0f7ff;
+  color: #0066cc;
+}
+
+.dropzoneSmallActive {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #10b981;
+  border-style: solid;
+}
+
+/* User Selector Container */
+.userSelectorContainer {
+  margin-top: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.userSearchBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.userSearchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.userSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+/* File List */
+.fileList {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fileListItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.fileListName {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileListSize {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.fileListRemove {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.fileListRemove:hover {
+  background: #fecaca;
+  transform: scale(1.1);
+}
+
+/* Access Selector Button */
+.accessSelectorBtn {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.accessSelectorBtn:hover {
+  border-color: #0066cc;
+}
+
+/* User Selector List */
+.userSelectorList {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.userSelectorItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.userSelectorItem:last-child {
+  border-bottom: none;
+}
+
+.userSelectorItem:hover {
+  background: #f9fafb;
+}
+
+.userSelected {
+  background: #ecfdf5;
+}
+
+.userSelected:hover {
+  background: #d1fae5;
+}
+
+.userSelectorInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.userName {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 0.9rem;
+}
+
+.userEmail {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.noUsers {
+  padding: 1rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.accessHint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #9ca3af;
 }

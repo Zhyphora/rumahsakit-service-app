@@ -24,7 +24,7 @@
 .brand {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #0284c7;
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -170,13 +170,61 @@
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
   }
 
-  .sidebar.open {
+  .sidebarOpen {
     left: 0;
   }
 
   .content {
     width: 100%;
     padding: 1rem;
+  }
+
+  .hamburgerBtn {
+    display: flex;
+  }
+}
+
+/* Nav Left for hamburger + logo */
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Hamburger Button - hidden by default */
+.hamburgerBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #374151;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.hamburgerBtn:hover {
+  background: #f3f4f6;
+  color: #0284c7;
+}
+
+/* Mobile Overlay */
+.mobileOverlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobileOverlay {
+    display: block;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 98;
   }
 }
 

@@ -590,7 +590,7 @@ export default function RolesPage() {
                     <th>User</th>
                     <th>Email</th>
                     <th>Role</th>
-                    <th>Detail Info</th> {/* New Column */}
+                    <th>Detail Info</th>
                     <th>Ubah Role</th>
                     <th>Aksi</th>
                   </tr>

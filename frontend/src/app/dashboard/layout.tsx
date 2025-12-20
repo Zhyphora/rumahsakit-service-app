@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styles from "./layout.module.css";
 import {
   FiHome,
@@ -12,10 +12,12 @@ import {
   FiFileText,
   FiClock,
   FiList,
-  FiActivity,
   FiLock,
+  FiMenu,
+  FiX,
 } from "react-icons/fi";
 import { MdLocalPharmacy } from "react-icons/md";
+import { FaHospitalSymbol } from "react-icons/fa";
 import { IconType } from "react-icons";
 
 interface SubNavItem {
@@ -37,6 +39,7 @@ export default function DashboardLayout({
 }) {
   const { user, logout, isLoading } = useAuth();
   const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -77,7 +80,11 @@ export default function DashboardLayout({
             label: "Farmasi",
             icon: MdLocalPharmacy,
           },
-          { href: "/dashboard/stock", label: "Stock Opname", icon: FiPackage },
+          {
+            href: "/dashboard/stock",
+            label: "Manajemen Stock",
+            icon: FiPackage,
+          },
           { href: "/dashboard/documents", label: "Dokumen", icon: FiFileText },
           { href: "/dashboard/attendance", label: "Absensi", icon: FiClock },
           {
@@ -209,10 +216,19 @@ export default function DashboardLayout({
     <div className={styles.container}>
       <nav className={styles.navbar}>
         <div className={styles.navbarContent}>
-          <Link href="/dashboard" className={styles.brand}>
-            <FiActivity size={24} />
-            <span>MediKu</span>
-          </Link>
+          <div className={styles.navLeft}>
+            <button
+              className={styles.hamburgerBtn}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            </button>
+            <Link href="/dashboard" className={styles.brand}>
+              <FaHospitalSymbol size={24} />
+              <span>MediKu</span>
+            </Link>
+          </div>
           <div className={styles.navRight}>
             <span className={styles.userName}>
               {user.name} ({getRoleDisplay()})
@@ -224,8 +240,20 @@ export default function DashboardLayout({
         </div>
       </nav>
 
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className={styles.mobileOverlay}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       <div className={styles.main}>
-        <aside className={styles.sidebar}>
+        <aside
+          className={`${styles.sidebar} ${
+            mobileMenuOpen ? styles.sidebarOpen : ""
+          }`}
+        >
           <ul className={styles.sidebarNav}>
             <ul className={styles.sidebarNav}>
               {navItems.map((item: NavItem) => {

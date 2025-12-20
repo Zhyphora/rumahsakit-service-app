@@ -1,75 +1,130 @@
+/* ========== MODERN ATTENDANCE PAGE STYLES ========== */
+
 .container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
+/* Header with Gradient */
 .header {
-  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #0066cc, #004c99);
+  border-radius: 1rem;
+  padding: 2rem;
+  color: white;
 }
 
 .title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: white;
   margin: 0;
 }
 
 .date {
-  color: #6b7280;
-  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
 }
 
+/* Today Status Card - Redesigned */
 .todayCard {
   background: white;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .todayCard h2 {
   font-size: 1.25rem;
-  color: #374151;
+  color: #1f2937;
   margin: 0 0 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.todayCard h2::before {
+  content: "📅";
 }
 
 .todayContent {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
 }
 
 .timeBlock {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem;
-  background: #f9fafb;
-  border-radius: 0.75rem;
+  padding: 1.5rem 1rem;
+  background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
+  border-radius: 1rem;
+  border: 1px solid #bae6fd;
+  transition: all 0.3s ease;
+}
+
+.timeBlock:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
+}
+
+.timeBlock:nth-child(1) {
+  background: linear-gradient(145deg, #ecfdf5, #d1fae5);
+  border-color: #a7f3d0;
+}
+
+.timeBlock:nth-child(1):hover {
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
+}
+
+.timeBlock:nth-child(2) {
+  background: linear-gradient(145deg, #fef3c7, #fde68a);
+  border-color: #fcd34d;
+}
+
+.timeBlock:nth-child(2):hover {
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
+}
+
+.timeBlock:nth-child(3) {
+  background: linear-gradient(145deg, #ede9fe, #ddd6fe);
+  border-color: #c4b5fd;
+}
+
+.timeBlock:nth-child(3):hover {
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
 }
 
 .timeLabel {
   font-size: 0.875rem;
   color: #6b7280;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .timeValue {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   color: #1f2937;
 }
 
 .photoThumb {
   width: 60px;
   height: 60px;
-  border-radius: 0.5rem;
+  border-radius: 50%;
   object-fit: cover;
-  margin-top: 0.5rem;
-  border: 2px solid #e5e7eb;
+  margin-top: 0.75rem;
+  border: 3px solid white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Actions - Centered with Better Buttons */
 .actions {
   display: flex;
   justify-content: center;
@@ -81,109 +136,139 @@
   font-size: 1rem;
   font-weight: 600;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btnPrimary {
-  background: #2563eb;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
-.btnPrimary:hover {
-  background: #1d4ed8;
+.btnPrimary:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
 
 .btnSecondary {
-  background: #e5e7eb;
+  background: #f3f4f6;
   color: #374151;
+  border: 2px solid #e5e7eb;
 }
 
-.btnSecondary:hover {
-  background: #d1d5db;
+.btnSecondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  transform: translateY(-2px);
 }
 
 .btnDanger {
-  background: #dc2626;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
-.btnDanger:hover {
-  background: #b91c1c;
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.btnDanger:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
 }
 
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .completedText {
-  color: #059669;
-  font-weight: 500;
+  color: #10b981;
+  font-weight: 600;
   margin: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* Camera Modal */
+.completedText::before {
+  content: "✅";
+}
+
+/* Camera Modal - Modernized */
 .cameraModal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  backdrop-filter: blur(5px);
 }
 
 .cameraContainer {
   background: white;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   width: 100%;
   max-width: 500px;
   overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .cameraHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #0066cc, #004c99);
+  color: white;
 }
 
 .cameraHeader h3 {
   margin: 0;
-  color: #1f2937;
+  color: white;
   font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .closeBtn {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: white;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  transition: all 0.2s;
 }
 
 .closeBtn:hover {
-  background: #f3f4f6;
-  color: #1f2937;
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .cameraPreview {
@@ -213,17 +298,19 @@
   justify-content: center;
   gap: 1rem;
   padding: 1.5rem;
+  background: #f9fafb;
 }
 
 .captureBtn {
-  width: 70px;
-  height: 70px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: white;
-  border: 4px solid #2563eb;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: 4px solid white;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
   position: relative;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
 }
 
 .captureBtn::after {
@@ -232,36 +319,48 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 50px;
-  height: 50px;
-  background: #2563eb;
+  width: 52px;
+  height: 52px;
+  background: white;
   border-radius: 50%;
   transition: all 0.2s;
 }
 
-.captureBtn:hover::after {
-  background: #1d4ed8;
+.captureBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
 }
 
 .captureBtn:active::after {
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: translate(-50%, -50%) scale(0.85);
 }
 
+/* History Section */
 .historySection {
   background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 1.25rem;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .historySection h2 {
   font-size: 1.25rem;
-  color: #374151;
-  margin: 0 0 1rem;
+  color: #1f2937;
+  margin: 0 0 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.historySection h2::before {
+  content: "📋";
 }
 
 .tableWrapper {
   overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
 }
 
 .table {
@@ -271,62 +370,104 @@
 
 .table th,
 .table td {
-  padding: 0.875rem 1rem;
+  padding: 1rem 1.25rem;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .table th {
-  background: #f9fafb;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   font-weight: 600;
   color: #374151;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e5e7eb;
 }
 
-.table tr:hover {
+.table td {
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+}
+
+.table tbody tr {
+  transition: all 0.2s;
+}
+
+.table tbody tr:hover {
   background: #f9fafb;
 }
 
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Badges */
 .badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 9999px;
+  gap: 0.25rem;
 }
 
 .badgeSuccess {
-  background: rgba(5, 150, 105, 0.1);
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
   color: #059669;
+  border: 1px solid #a7f3d0;
 }
 
 .badgeWarning {
-  background: rgba(217, 119, 6, 0.1);
-  color: #d97706;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #b45309;
+  border: 1px solid #fcd34d;
 }
 
 .badgeDanger {
-  background: rgba(220, 38, 38, 0.1);
+  background: linear-gradient(135deg, #fef2f2, #fecaca);
   color: #dc2626;
+  border: 1px solid #fca5a5;
 }
 
 .badgeInfo {
-  background: rgba(37, 99, 235, 0.1);
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
   color: #2563eb;
+  border: 1px solid #93c5fd;
 }
 
 .emptyState {
   text-align: center;
-  padding: 3rem;
+  padding: 4rem 2rem;
   color: #9ca3af;
+  font-size: 1rem;
 }
 
+.emptyState::before {
+  content: "📭";
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
+  .header {
+    padding: 1.5rem;
+  }
+
   .todayContent {
     grid-template-columns: 1fr;
   }
 
   .btn {
     padding: 0.875rem 1.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .actions {
+    flex-direction: column;
   }
 }
 
@@ -335,12 +476,13 @@
     font-size: 1.5rem;
   }
 
-  .todayCard {
+  .todayCard,
+  .historySection {
     padding: 1.5rem;
   }
 
   .timeValue {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
   }
 
   .cameraActions {
@@ -348,12 +490,12 @@
   }
 
   .captureBtn {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
   }
 
   .captureBtn::after {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
   }
 }
