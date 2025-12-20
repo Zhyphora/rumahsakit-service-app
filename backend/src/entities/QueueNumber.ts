@@ -16,7 +16,8 @@ export type QueueStatus =
   | "called"
   | "serving"
   | "completed"
-  | "skipped";
+  | "skipped"
+  | "cancelled";
 
 @Entity("queue_numbers")
 export class QueueNumber {

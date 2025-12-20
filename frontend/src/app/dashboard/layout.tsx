@@ -16,6 +16,19 @@ import {
   FiLock,
 } from "react-icons/fi";
 import { MdLocalPharmacy } from "react-icons/md";
+import { IconType } from "react-icons";
+
+interface SubNavItem {
+  href: string;
+  label: string;
+}
+
+interface NavItem {
+  href?: string;
+  label: string;
+  icon: IconType;
+  subItems?: SubNavItem[];
+}
 
 export default function DashboardLayout({
   children,
@@ -44,8 +57,8 @@ export default function DashboardLayout({
   }
 
   // Define nav items based on role
-  const getNavItems = () => {
-    const baseItems = [
+  const getNavItems = (): NavItem[] => {
+    const baseItems: NavItem[] = [
       { href: "/dashboard", label: "Dashboard", icon: FiHome },
     ];
 

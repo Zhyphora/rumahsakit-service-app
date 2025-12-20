@@ -3,6 +3,12 @@ import { DocumentService } from "../services/DocumentService";
 import { AuthRequest } from "../middlewares/auth";
 import path from "path";
 import { env } from "../config/env";
+import { User } from "../entities/User";
+
+// Helper to extract role name from user
+const getRoleName = (user: User): string => {
+  return typeof user.role === "string" ? user.role : user.role?.name || "";
+};
 
 export class DocumentController {
   private documentService = new DocumentService();
@@ -125,7 +131,7 @@ export class DocumentController {
       const { category, patientId, folderId } = req.query;
       const documents = await this.documentService.getDocuments(
         req.user.id,
-        req.user.role,
+        getRoleName(req.user),
         {
           category: category as string,
           patientId: patientId as string,
@@ -150,7 +156,7 @@ export class DocumentController {
       const document = await this.documentService.getDocumentById(
         req.params.id,
         req.user.id,
-        req.user.role
+        getRoleName(req.user)
       );
 
       // Log access
@@ -182,7 +188,7 @@ export class DocumentController {
       const document = await this.documentService.getDocumentById(
         req.params.id,
         req.user.id,
-        req.user.role
+        getRoleName(req.user)
       );
 
       // Log download
@@ -214,7 +220,7 @@ export class DocumentController {
       const document = await this.documentService.updateDocument(
         req.params.id,
         req.user.id,
-        req.user.role,
+        getRoleName(req.user),
         req.body
       );
 
@@ -239,7 +245,7 @@ export class DocumentController {
       await this.documentService.deleteDocument(
         req.params.id,
         req.user.id,
-        req.user.role
+        getRoleName(req.user)
       );
 
       res.json({ message: "Document deleted successfully" });
