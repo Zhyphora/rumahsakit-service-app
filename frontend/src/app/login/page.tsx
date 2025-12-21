@@ -39,6 +39,14 @@ function LoginForm() {
   return (
     <div className={styles.container}>
       <div className={styles.card}>
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className={styles.backBtn}
+        >
+          ← Kembali
+        </button>
+
         <div className={styles.header}>
           <h1 className={styles.title}>MediKu</h1>
           <p className={styles.subtitle}>

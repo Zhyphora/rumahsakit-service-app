@@ -137,6 +137,43 @@ export default function StockOpnameDetail() {
   const handleComplete = async () => {
     if (!opname) return;
 
+    // Check if there are items without actualQty filled
+    const unfilledItems = opname.items.filter(
+      (item) => item.actualQty === null || item.actualQty === undefined
+    );
+
+    if (unfilledItems.length > 0) {
+      const confirmResult = await MySwal.fire({
+        title: "Ada item yang belum diisi",
+        text: `${unfilledItems.length} item belum diisi kuantitas aktual. Gunakan System Qty sebagai Actual Qty?`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Ya, Gunakan System Qty",
+        cancelButtonText: "Batal",
+      });
+
+      if (confirmResult.isConfirmed) {
+        // Save all unfilled items with systemQty
+        try {
+          for (const item of unfilledItems) {
+            await api.post(`/stock/opname/${opname.id}/items`, {
+              itemId: item.itemId,
+              actualQty: item.systemQty,
+            });
+          }
+          // Reload to get updated data
+          await loadOpname(opname.id);
+        } catch (error) {
+          toast.error("Gagal menyimpan kuantitas aktual");
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
     MySwal.fire({
       title: "Selesaikan Stock Opname?",
       text: "Stok akan diperbarui secara permanen sesuai hasil opname ini.",

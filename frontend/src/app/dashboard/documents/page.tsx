@@ -415,16 +415,6 @@ export default function DocumentsPage() {
                 </div>
                 <div className={styles.docActions}>
                   <button
-                    onClick={() => {
-                      setSelectedDocument(doc);
-                      setShowAccessModal(true);
-                    }}
-                    className={styles.settingsBtn}
-                    title="Pengaturan Akses"
-                  >
-                    <FiSettings size={16} />
-                  </button>
-                  <button
                     onClick={() => handleDownload(doc)}
                     className={styles.downloadBtn}
                     title="Download"
@@ -844,18 +834,6 @@ export default function DocumentsPage() {
           </div>,
           document.body
         )}
-
-      {/* Access Control Modal */}
-      {showAccessModal && selectedDocument && (
-        <DocumentAccessModal
-          document={selectedDocument}
-          onClose={() => {
-            setShowAccessModal(false);
-            setSelectedDocument(null);
-          }}
-          onUpdate={() => currentFolder && loadDocuments(currentFolder.id)}
-        />
-      )}
     </div>
   );
 }

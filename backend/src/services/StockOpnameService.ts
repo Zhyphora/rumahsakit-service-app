@@ -81,7 +81,26 @@ export class StockOpnameService {
       if (opname.status === "completed")
         throw new Error("Opname already completed");
 
+      // Check if there are any items with actual quantities filled
+      const itemsWithActual = opname.items.filter(
+        (item) => item.actualQty !== null && item.actualQty !== undefined
+      );
+
+      if (itemsWithActual.length === 0) {
+        throw new Error(
+          "Tidak ada item dengan kuantitas aktual yang diisi. Silakan isi kuantitas aktual terlebih dahulu."
+        );
+      }
+
       for (const opnameItem of opname.items) {
+        // Skip items that don't have actual quantity filled
+        if (
+          opnameItem.actualQty === null ||
+          opnameItem.actualQty === undefined
+        ) {
+          continue;
+        }
+
         const diff = opnameItem.actualQty - opnameItem.systemQty;
         if (diff === 0) continue;
 

@@ -15,6 +15,7 @@ interface CreatePrescriptionDto {
   patientId: string;
   doctorId: string;
   diagnosis?: string;
+  actions?: string;
   notes?: string;
   items: {
     itemId: string;
@@ -53,6 +54,7 @@ export class PrescriptionService {
       polyclinicId: polyclinicId,
       visitDate: new Date(),
       diagnosis: data.diagnosis || "Pemeriksaan",
+      actions: data.actions,
       notes: data.notes,
     });
     const savedMedicalRecord = await this.medicalRecordRepository.save(

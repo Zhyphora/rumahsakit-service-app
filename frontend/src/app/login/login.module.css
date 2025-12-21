@@ -139,3 +139,22 @@
     font-size: 0.75rem;
   }
 }
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: #0ea5e9;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1rem;
+  transition: color 0.2s;
+}
+
+.backBtn:hover {
+  color: #0284c7;
+}

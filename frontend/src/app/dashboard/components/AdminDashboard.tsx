@@ -97,7 +97,8 @@ export default function AdminDashboard() {
       let totalPatients = 0;
       try {
         const patientsRes = await api.get("/patients");
-        totalPatients = patientsRes.data.length;
+        totalPatients =
+          patientsRes.data.data?.length || patientsRes.data.length || 0;
       } catch (e) {}
 
       setStats({

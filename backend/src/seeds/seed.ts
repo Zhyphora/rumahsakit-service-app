@@ -281,7 +281,7 @@ async function seed() {
     const pharmacistUser = userRepository.create({
       email: "joko@mediku.com",
       password: hashedPassword,
-      name: "Joko Widodo",
+      name: "Joko Ningsih",
       role: roles["pharmacist"],
       phone: "081234567891",
     });

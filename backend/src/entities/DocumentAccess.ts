@@ -34,14 +34,17 @@ export class DocumentAccess {
   @Column({ name: "document_id", nullable: true })
   documentId?: string;
 
-  @ManyToOne(() => Document, (doc) => doc.accessList, { nullable: true })
+  @ManyToOne(() => Document, (doc) => doc.accessList, {
+    nullable: true,
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "document_id" })
   document?: Document;
 
   @Column({ name: "folder_id", nullable: true })
   folderId?: string;
 
-  @ManyToOne(() => DocumentFolder, { nullable: true })
+  @ManyToOne(() => DocumentFolder, { nullable: true, onDelete: "CASCADE" })
   @JoinColumn({ name: "folder_id" })
   folder?: DocumentFolder;
 

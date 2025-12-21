@@ -31,6 +31,7 @@ export default function QueuePage() {
   const [currentQueue, setCurrentQueue] = useState<QueueNumber | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [diagnosis, setDiagnosis] = useState("");
+  const [actions, setActions] = useState("");
   const [notes, setNotes] = useState("");
   const [prescriptionItems, setPrescriptionItems] = useState<
     PrescriptionItem[]
@@ -140,6 +141,7 @@ export default function QueuePage() {
   const openPrescriptionModal = (queue: QueueNumber) => {
     setCurrentQueue(queue);
     setDiagnosis("");
+    setActions("");
     setNotes("");
     setPrescriptionItems([]);
     setShowPrescriptionModal(true);
@@ -190,6 +192,7 @@ export default function QueuePage() {
           patientId: currentQueue.patientId,
           doctorId: currentQueue.doctorId,
           diagnosis,
+          actions,
           notes,
           items: prescriptionItems
             .filter((item) => item.itemId)
@@ -342,6 +345,33 @@ export default function QueuePage() {
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
                     placeholder="Masukkan diagnosis..."
+                    rows={2}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "0.5rem",
+                      fontSize: "0.875rem",
+                    }}
+                  />
+                </div>
+
+                {/* Tindakan */}
+                <div style={{ marginBottom: "1rem" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: "500",
+                      color: "#374151",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Tindakan
+                  </label>
+                  <textarea
+                    value={actions}
+                    onChange={(e) => setActions(e.target.value)}
+                    placeholder="Masukkan tindakan yang dilakukan..."
                     rows={2}
                     style={{
                       width: "100%",

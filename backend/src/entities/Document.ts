@@ -58,6 +58,7 @@ export class Document {
 
   @ManyToOne(() => DocumentFolder, (folder) => folder.documents, {
     nullable: true,
+    onDelete: "CASCADE",
   })
   @JoinColumn({ name: "folder_id" })
   folder?: DocumentFolder;

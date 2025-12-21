@@ -46,7 +46,7 @@
 }
 
 .todayCard h2::before {
-  content: "📅";
+  content: "";
 }
 
 .todayContent {
@@ -195,7 +195,7 @@
 }
 
 .completedText::before {
-  content: "✅";
+  content: "";
 }
 
 /* Camera Modal - Modernized */
@@ -354,7 +354,7 @@
 }
 
 .historySection h2::before {
-  content: "📋";
+  content: "";
 }
 
 .tableWrapper {
@@ -444,7 +444,7 @@
 }
 
 .emptyState::before {
-  content: "📭";
+  content: "";
   display: block;
   font-size: 3rem;
   margin-bottom: 1rem;
