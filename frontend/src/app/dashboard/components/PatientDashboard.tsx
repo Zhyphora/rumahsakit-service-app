@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/services/api";
 import {
@@ -93,8 +94,45 @@ export default function PatientDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [queueResult, setQueueResult] = useState<any>(null);
 
+  const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3001";
+  const socketRef = useRef<Socket | null>(null);
+
   useEffect(() => {
     loadData();
+
+    // Setup WebSocket for real-time updates
+    const socket = io(WS_URL);
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Patient Dashboard: WebSocket connected");
+      // Join patient-specific room if we have patient ID
+      if (user?.id) {
+        socket.emit("join:patient", user.id);
+      }
+    });
+
+    // Listen for queue updates
+    socket.on("queue:update", () => {
+      console.log("Queue update received");
+      loadData();
+    });
+
+    // Listen for medical record updates
+    socket.on("medical-record:update", () => {
+      console.log("Medical record update received");
+      loadData();
+    });
+
+    // Listen for prescription updates
+    socket.on("prescription:update", () => {
+      console.log("Prescription update received");
+      loadData();
+    });
+
+    return () => {
+      socket.close();
+    };
   }, [user]);
 
   const loadData = async () => {

@@ -3,6 +3,12 @@ import { Prescription, PrescriptionStatus } from "../entities/Prescription";
 import { PrescriptionItem } from "../entities/PrescriptionItem";
 import { Item } from "../entities/Item";
 import { StockMovement } from "../entities/StockMovement";
+import { MedicalRecord } from "../entities/MedicalRecord";
+import { QueueNumber } from "../entities/QueueNumber";
+import {
+  broadcastMedicalRecordUpdate,
+  broadcastPrescriptionUpdate,
+} from "../config/websocket";
 
 interface CreatePrescriptionDto {
   queueNumberId?: string;
@@ -24,13 +30,41 @@ export class PrescriptionService {
     AppDataSource.getRepository(PrescriptionItem);
   private itemRepository = AppDataSource.getRepository(Item);
   private stockMovementRepository = AppDataSource.getRepository(StockMovement);
+  private medicalRecordRepository = AppDataSource.getRepository(MedicalRecord);
+  private queueNumberRepository = AppDataSource.getRepository(QueueNumber);
 
   // Create new prescription
   async createPrescription(data: CreatePrescriptionDto): Promise<Prescription> {
+    // First, create a medical record for this visit
+    let polyclinicId: string | undefined;
+
+    // Get polyclinic from queue if available
+    if (data.queueNumberId) {
+      const queue = await this.queueNumberRepository.findOne({
+        where: { id: data.queueNumberId },
+      });
+      polyclinicId = queue?.polyclinicId;
+    }
+
+    // Create medical record
+    const medicalRecord = this.medicalRecordRepository.create({
+      patientId: data.patientId,
+      doctorId: data.doctorId,
+      polyclinicId: polyclinicId,
+      visitDate: new Date(),
+      diagnosis: data.diagnosis || "Pemeriksaan",
+      notes: data.notes,
+    });
+    const savedMedicalRecord = await this.medicalRecordRepository.save(
+      medicalRecord
+    );
+
+    // Create prescription linked to medical record
     const prescription = this.prescriptionRepository.create({
       queueNumberId: data.queueNumberId,
       patientId: data.patientId,
       doctorId: data.doctorId,
+      medicalRecordId: savedMedicalRecord.id,
       diagnosis: data.diagnosis,
       notes: data.notes,
       status: "pending",
@@ -52,6 +86,15 @@ export class PrescriptionService {
     );
 
     await this.prescriptionItemRepository.save(items);
+
+    // Broadcast update to patient dashboard
+    broadcastPrescriptionUpdate(data.patientId, {
+      prescriptionId: savedPrescription.id,
+    });
+    broadcastMedicalRecordUpdate(data.patientId, {
+      type: "prescription_created",
+      medicalRecordId: savedMedicalRecord.id,
+    });
 
     return this.getPrescriptionById(
       savedPrescription.id
@@ -78,6 +121,30 @@ export class PrescriptionService {
     return this.prescriptionRepository.find({
       where: { patientId },
       relations: ["doctor", "doctor.user", "items", "items.item"],
+      order: { createdAt: "DESC" },
+    });
+  }
+
+  // Get my prescriptions (by user id - finds patient first)
+  async getMyPrescriptions(userId: string): Promise<Prescription[]> {
+    // Import Patient repository
+    const { Patient } = require("../entities/Patient");
+    const patientRepo = AppDataSource.getRepository(Patient);
+
+    const patient = await patientRepo.findOne({ where: { userId } });
+    if (!patient) {
+      return [];
+    }
+
+    return this.prescriptionRepository.find({
+      where: { patientId: patient.id },
+      relations: [
+        "doctor",
+        "doctor.user",
+        "doctor.polyclinic",
+        "items",
+        "items.item",
+      ],
       order: { createdAt: "DESC" },
     });
   }
@@ -166,7 +233,20 @@ export class PrescriptionService {
     prescription.dispensedBy = pharmacistId;
     prescription.dispensedAt = new Date();
 
-    return this.prescriptionRepository.save(prescription);
+    const savedPrescription = await this.prescriptionRepository.save(
+      prescription
+    );
+
+    // Broadcast update to patient
+    broadcastPrescriptionUpdate(prescription.patientId, {
+      prescriptionId: prescription.id,
+      status: "completed",
+    });
+    broadcastMedicalRecordUpdate(prescription.patientId, {
+      type: "prescription_dispensed",
+    });
+
+    return savedPrescription;
   }
 
   // Cancel prescription

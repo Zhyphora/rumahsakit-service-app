@@ -6,6 +6,7 @@ import { Polyclinic } from "../entities/Polyclinic";
 import {
   broadcastQueueUpdate,
   broadcastQueueCalled,
+  broadcastMedicalRecordUpdate,
 } from "../config/websocket";
 
 import { User } from "../entities/User";
@@ -289,6 +290,14 @@ export class QueueService {
 
     await this.queueNumberRepository.save(queue);
     await this.broadcastQueueState(queue.polyclinicId);
+
+    // Broadcast medical record update to patient
+    if (queue.patientId) {
+      broadcastMedicalRecordUpdate(queue.patientId, {
+        type: "queue_completed",
+        queueId: queue.id,
+      });
+    }
 
     return queue;
   }

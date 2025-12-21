@@ -55,6 +55,26 @@ export class PrescriptionController {
     }
   };
 
+  // Get my prescriptions (for logged in patient)
+  getMyPrescriptions = async (
+    req: AuthRequest,
+    res: Response
+  ): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+      }
+
+      const history = await this.prescriptionService.getMyPrescriptions(
+        req.user.id
+      );
+      res.json(history);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
   // Get pending prescriptions (pharmacy queue)
   getPendingPrescriptions = async (
     _req: Request,

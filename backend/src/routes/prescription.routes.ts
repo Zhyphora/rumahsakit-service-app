@@ -20,6 +20,9 @@ router.get("/", prescriptionController.getAllPrescriptions);
 // Get patient medical history
 router.get("/patient/:patientId", prescriptionController.getPatientHistory);
 
+// Get my prescriptions (for logged in patient)
+router.get("/my", prescriptionController.getMyPrescriptions);
+
 // Get prescription by ID
 router.get("/:id", prescriptionController.getPrescriptionById);
 

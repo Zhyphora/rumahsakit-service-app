@@ -339,3 +339,64 @@
   margin-top: 0.25rem;
   font-weight: 500;
 }
+
+/* Sound Toggle Button */
+.soundToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 2rem;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.soundOn {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.soundOn:hover {
+  background: #bbf7d0;
+}
+
+.soundOff {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.soundOff:hover {
+  background: #fecaca;
+}
+
+/* Header Controls Container */
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* WebSocket Status Indicator */
+.wsStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.wsConnected {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.wsDisconnected {
+  background: #fef3c7;
+  color: #d97706;
+}

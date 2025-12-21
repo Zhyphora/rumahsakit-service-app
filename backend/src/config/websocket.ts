@@ -26,6 +26,12 @@ export const initializeWebSocket = (httpServer: HttpServer): SocketServer => {
       console.log(`Client ${socket.id} joined queue:display`);
     });
 
+    // Join patient-specific room (for patient dashboard)
+    socket.on("join:patient", (patientId: string) => {
+      socket.join(`patient:${patientId}`);
+      console.log(`Client ${socket.id} joined patient:${patientId}`);
+    });
+
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
     });
@@ -54,5 +60,20 @@ export const broadcastQueueCalled = (polyclinicId: string, data: any) => {
   if (io) {
     io.to(`polyclinic:${polyclinicId}`).emit("queue:called", data);
     io.to("queue:display").emit("queue:called", data);
+  }
+};
+
+// Broadcast medical record update to patient
+export const broadcastMedicalRecordUpdate = (patientId: string, data?: any) => {
+  if (io) {
+    io.to(`patient:${patientId}`).emit("medical-record:update", data);
+    io.emit("medical-record:update", data); // Also broadcast globally
+  }
+};
+
+// Broadcast prescription update
+export const broadcastPrescriptionUpdate = (patientId: string, data?: any) => {
+  if (io) {
+    io.to(`patient:${patientId}`).emit("prescription:update", data);
   }
 };
