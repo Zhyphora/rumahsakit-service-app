@@ -12,6 +12,7 @@ import {
   FiAlertCircle,
   FiPlus,
   FiCalendar,
+  FiArrowLeft,
 } from "react-icons/fi";
 import {
   FaTooth,
@@ -195,12 +196,19 @@ export default function TakeQueuePage() {
     return (
       <div className={styles.container}>
         <div className={styles.ticketContainer}>
+          <button
+            onClick={() => window.history.back()}
+            className={styles.backBtn}
+          >
+            <FiArrowLeft size={18} />
+            Kembali
+          </button>
           <div className={styles.ticket}>
             <div className={styles.ticketHeader}>
               <div className={styles.brandName}>
                 <FiActivity /> MediKu
               </div>
-              <div className={styles.ticketLabel}>Nomor Antrian Anda</div>
+              <div className={styles.ticketLabel}>NOMOR ANTRIAN ANDA</div>
             </div>
 
             <div className={styles.ticketNumberWrapper}>
@@ -258,7 +266,7 @@ export default function TakeQueuePage() {
               </div>
 
               <button onClick={handleNewQueue} className={styles.newQueueBtn}>
-                <FiPlus /> Ambil Antrian Lain
+                <FiPlus /> Ambil Antrian Baru
               </button>
             </div>
           </div>

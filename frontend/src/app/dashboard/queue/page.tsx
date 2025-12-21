@@ -48,8 +48,13 @@ export default function QueuePage() {
 
   const loadAllQueues = async () => {
     try {
+      // Check if user is a doctor (handle both Role object and string)
+      const roleName =
+        typeof user?.role === "object" ? user.role.name : user?.role;
+      const isDoctor = roleName?.toLowerCase() === "doctor";
+
       // For doctors, only show their assigned polyclinic
-      if (user?.role === "doctor" && user?.doctor?.polyclinicId) {
+      if (isDoctor && user?.doctor?.polyclinicId) {
         const polyclinicId = user.doctor.polyclinicId;
         const polyclinicName = user.doctor.polyclinic?.name || "Poliklinik";
         const polyclinicCode = user.doctor.polyclinic?.code || "POLI";
